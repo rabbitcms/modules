@@ -6,7 +6,7 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider as IlluminateServiceProvider;
 use RabbitCMS\Modules\Contracts\ModulesManager;
 
-abstract class Provider extends IlluminateServiceProvider
+abstract class ModuleProvider extends IlluminateServiceProvider
 {
     /**
      * @var Module
