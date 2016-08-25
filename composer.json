@@ -1,7 +1,7 @@
 {
   "name": "rabbitcms/modules",
   "description": "Modules support for Laravel 5.3+",
-  "keywords":[
+  "keywords": [
     "modules",
     "laravel",
     "module",
@@ -19,15 +19,14 @@
     {
       "name": "Kulyk Dmytro",
       "email": "lnkvisitor.ts@gmail.com"
-    },
-    {
-      "name": "Dimon Zhurakovskiy",
-      "email": "dmytro.zhurakovsky@gmail.com"
     }
   ],
   "autoload": {
     "psr-4": {
       "RabbitCMS\\Modules\\": "src/"
-    }
+    },
+    "files": [
+      "src/Support/helpers.php"
+    ]
   }
 }
