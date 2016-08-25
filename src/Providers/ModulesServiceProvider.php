@@ -56,7 +56,7 @@ class ModulesServiceProvider extends ServiceProvider
     protected function registerServices()
     {
         $this->app->singleton(
-            ['modules'=> ModulesManager::class],
+            ['modules' => ModulesManager::class],
             function ($app) {
                 return new Manager($app);
             }

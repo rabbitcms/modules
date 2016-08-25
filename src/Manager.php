@@ -56,7 +56,7 @@ class Manager implements ModulesManager
     public function scan($store = true)
     {
         $modules = new Repository();
-        foreach ((array)$this->config('modules.paths', []) as $path) {
+        foreach ((array)$this->config('paths', []) as $path) {
             if (!is_dir($path)) {
                 continue;
             }
