@@ -24,6 +24,13 @@ class Module implements Arrayable
     protected $name;
 
     /**
+     * Module description.
+     *
+     * @var string
+     */
+    protected $description;
+
+    /**
      * Module namespace.
      *
      * @var string
@@ -59,6 +66,7 @@ class Module implements Arrayable
         $this->path = $options['path'];
         $this->namespace = $options['namespace'];
         $this->name = array_key_exists('name', $options) ? $options['name'] : basename($this->path);
+        $this->description = array_key_exists('description', $options) ? $options['description'] : '';
         $this->enabled = array_key_exists('enabled', $options) ? $options['enabled'] : true;
         $this->providers = array_key_exists('providers', $options) ? (array)$options['providers'] : [];
         $this->system = array_key_exists('system', $options) ? $options['system'] : false;
@@ -136,12 +144,23 @@ class Module implements Arrayable
     public function toArray()
     {
         return [
-            'path'      => $this->path,
-            'name'      => $this->name,
-            'namespace' => $this->namespace,
-            'enabled'   => $this->enabled,
-            'providers' => $this->providers,
-            'system'    => $this->system,
+            'path'        => $this->path,
+            'name'        => $this->name,
+            'description' => $this->description,
+            'namespace'   => $this->namespace,
+            'enabled'     => $this->enabled,
+            'providers'   => $this->providers,
+            'system'      => $this->system,
         ];
+    }
+
+    /**
+     * Get module description.
+     *
+     * @return string
+     */
+    public function getDescription()
+    {
+        return $this->description;
     }
 }

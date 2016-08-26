@@ -81,10 +81,18 @@ class Manager implements ModulesManager
                         throw new RuntimeException('Module namespace must be set.');
                     }
                 }
+
+                if (empty($module['name'])) {
+                    $names = explode('/',$composer['name']);
+                    $module['name'] = $names[1];
+                }
+
+                $module['description'] = array_key_exists('description',$composer) ? $composer['description'] : '';
+
                 $module['path'] = $file->getPathname();
                 $module = new Module($module);
                 if ($this->modules->has($module->getName())) {
-                    //$module->setEnabled($this->modules->get($module->getName())->isEnabled());
+                    $module->setEnabled($this->modules->get($module->getName())->isEnabled());
                 }
                 $path = public_path($this->getAssetsPath() . '/' . $module->getName());
                 $public = $module->getPath('Assets');

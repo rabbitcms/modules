@@ -62,4 +62,11 @@ interface ModulesManager
      * @return Module
      */
     public function get($name);
+
+    /**
+     * Get all modules.
+     *
+     * @return Repository
+     */
+    public function all();
 }

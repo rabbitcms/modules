@@ -41,6 +41,9 @@ abstract class ModuleProvider extends IlluminateServiceProvider
         $this->registerTranslations();
         $this->registerViews();
 
+        if (is_dir($dir = $this->module->getPath('Database/Migrations'))) {
+            $this->loadMigrationsFrom($dir);
+        }
     }
 
     /**
