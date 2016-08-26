@@ -76,7 +76,7 @@ class Manager implements ModulesManager
                 $module = $composer['extra']['module'];
                 if (empty($module['namespace'])) {
                     if (isset($composer['autoload']['psr-4']) && is_array($composer['autoload']['psr-4']) && count($composer['autoload']['psr-4']) > 0) {
-                        $module['namespace'] = rtrim($composer['autoload']['psr-4'], '\\');
+                        $module['namespace'] = rtrim(key($composer['autoload']['psr-4']), '\\');
                     } else {
                         throw new RuntimeException('Module namespace must be set.');
                     }
