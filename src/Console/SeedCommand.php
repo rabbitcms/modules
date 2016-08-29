@@ -2,7 +2,8 @@
 
 namespace RabbitCMS\Modules\Console;
 
-use RabbitCMS\Modules\Support\DatabaseSeeder;
+
+use RabbitCMS\Modules\Seeders\DatabaseSeeder;
 
 class SeedCommand extends \Illuminate\Database\Console\Seeds\SeedCommand
 {
