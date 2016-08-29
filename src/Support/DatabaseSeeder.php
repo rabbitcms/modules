@@ -21,7 +21,7 @@ class DatabaseSeeder extends Seeder
 
         $modules->enabled()->each(
             function (Module $module) {
-                $class = $module->getNamespace() . '\\Database\\Migrations\\DatabaseSeeder';
+                $class = $module->getNamespace() . '\\Database\\Seeders\\DatabaseSeeder';
                 if (class_exists($class)) {
                     $this->call($class);
                 }
