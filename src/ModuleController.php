@@ -39,9 +39,6 @@ abstract class ModuleController extends BaseController
     {
         $this->app = $app;
         $this->config = $app->make('config');
-        if (method_exists($this, 'init')) {
-            $this->app->call([$this, 'init']);
-        }
     }
 
     /**
@@ -82,7 +79,12 @@ abstract class ModuleController extends BaseController
      */
     public function callAction($method, $parameters)
     {
+        if (method_exists($this, 'init')) {
+            $this->app->call([$this, 'init']);
+        }
+
         $response = parent::callAction($method, $parameters);
+
         if ($this->cache > 0) {
             $response = \Route::prepareResponse($this->app->make('request'), $response);
             $response->headers->addCacheControlDirective('public');
@@ -90,6 +92,29 @@ abstract class ModuleController extends BaseController
         }
 
         return $response;
+    }
+
+    /**
+     * @param string $path
+     *
+     * @return string
+     */
+    public function asset($path)
+    {
+        return asset_module($path, $this->module()->getName());
+    }
+
+    /**
+     * @param string $id
+     * @param array  $parameters
+     * @param string $domain
+     * @param null   $locale
+     *
+     * @return array|null|string
+     */
+    public function trans($id, array $parameters = [], $domain = 'messages', $locale = null)
+    {
+        return $this->app->make('translator')->trans($this->module()->getName() . '::' . $id, $parameters, $domain, $locale);
     }
 
     /**
@@ -113,15 +138,5 @@ abstract class ModuleController extends BaseController
     protected function viewName($view)
     {
         return $this->module()->getName() . '::' . $view;
-    }
-
-    /**
-     * @param string $path
-     *
-     * @return string
-     */
-    protected function asset($path)
-    {
-        return asset_module($path, $this->module()->getName());
     }
 }
