@@ -61,7 +61,7 @@ abstract class ModuleProvider extends IlluminateServiceProvider
     /**
      * Register translations.
      */
-    public function registerTranslations()
+    protected function registerTranslations()
     {
         $langPath = base_path("resources/lang/modules/{$this->module->getName()}");
 
@@ -75,7 +75,7 @@ abstract class ModuleProvider extends IlluminateServiceProvider
     /**
      * Register views.
      */
-    public function registerViews()
+    protected function registerViews()
     {
         $viewPath = base_path("resources/views/modules/{$this->module->getName()}");
 
@@ -84,5 +84,17 @@ abstract class ModuleProvider extends IlluminateServiceProvider
         $this->publishes([$sourcePath => $viewPath]);
 
         $this->loadViewsFrom([$viewPath, $sourcePath], $this->module->getName());
+    }
+
+    /**
+     * Get the specified configuration value.
+     *
+     * @param  string $key
+     * @param  mixed $default
+     * @return mixed
+     */
+    protected function config($key, $default)
+    {
+        $this->app->make('config')->get("module.{$this->module->getName()}.$key", $default);
     }
 }
