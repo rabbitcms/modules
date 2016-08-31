@@ -93,7 +93,7 @@ abstract class ModuleProvider extends IlluminateServiceProvider
      * @param  mixed $default
      * @return mixed
      */
-    protected function config($key, $default)
+    protected function config($key, $default = null)
     {
         $this->app->make('config')->get("module.{$this->module->getName()}.$key", $default);
     }
