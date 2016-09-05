@@ -83,7 +83,7 @@ abstract class ModuleController extends BaseController
     public function callAction($method, $parameters)
     {
         if (method_exists($this, 'before')) {
-            $this->app->call([$this, 'before']);
+            $this->app->call([$this, 'before'], ['method' => $method]);
         }
 
         $response = parent::callAction($method, $parameters);
