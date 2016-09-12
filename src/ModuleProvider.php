@@ -53,9 +53,11 @@ abstract class ModuleProvider extends IlluminateServiceProvider
     {
         $configPath = $this->module->getPath('Config/config.php');
 
-        $this->mergeConfigFrom($configPath, "module.{$this->module->getName()}");
+        if (is_file($configPath)) {
+            $this->mergeConfigFrom($configPath, "module.{$this->module->getName()}");
 
-        $this->publishes([$configPath => config_path("module/{$this->module->getName()}.php")]);
+            $this->publishes([$configPath => config_path("module/{$this->module->getName()}.php")]);
+        }
     }
 
     /**
@@ -90,7 +92,8 @@ abstract class ModuleProvider extends IlluminateServiceProvider
      * Get the specified configuration value.
      *
      * @param  string $key
-     * @param  mixed $default
+     * @param  mixed  $default
+     *
      * @return mixed
      */
     protected function config($key, $default = null)
