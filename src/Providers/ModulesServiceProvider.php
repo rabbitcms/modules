@@ -8,8 +8,8 @@ use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 use RabbitCMS\Modules\Console\DisableCommand;
 use RabbitCMS\Modules\Console\EnableCommand;
-use RabbitCMS\Modules\Console\ScanCommand;
 use RabbitCMS\Modules\Console\ListCommand;
+use RabbitCMS\Modules\Console\ScanCommand;
 use RabbitCMS\Modules\Contracts\ModulesManager;
 use RabbitCMS\Modules\Manager;
 use RabbitCMS\Modules\Module;
@@ -60,60 +60,41 @@ class ModulesServiceProvider extends ServiceProvider
      */
     protected function registerServices()
     {
-        $this->app->singleton(
-            ['modules' => ModulesManager::class],
-            function ($app) {
-                return new Manager($app);
-            }
-        );
+        $this->app->singleton(['modules' => ModulesManager::class], function ($app) {
+            return new Manager($app);
+        });
     }
 
     public function registerCommands()
     {
-        $this->app->singleton(
+        $this->app->singleton('modules.commands.scan', function () {
+            return new ScanCommand($this->app->make('modules'));
+        });
+
+        $this->app->singleton('modules.commands.enable', function () {
+            return new EnableCommand($this->app->make('modules'));
+        });
+
+        $this->app->singleton('modules.commands.disable', function () {
+            return new DisableCommand($this->app->make('modules'));
+        });
+
+        $this->app->singleton('modules.commands.list', function () {
+            return new ListCommand($this->app->make('modules'));
+        });
+
+        $this->commands([
             'modules.commands.scan',
-            function () {
-                return new ScanCommand($this->app->make('modules'));
-            }
-        );
-
-        $this->app->singleton(
             'modules.commands.enable',
-            function () {
-                return new EnableCommand($this->app->make('modules'));
-            }
-        );
-
-        $this->app->singleton(
             'modules.commands.disable',
-            function () {
-                return new DisableCommand($this->app->make('modules'));
-            }
-        );
-
-        $this->app->singleton(
             'modules.commands.list',
-            function () {
-                return new ListCommand($this->app->make('modules'));
-            }
-        );
-
-        $this->commands(
-            [
-                'modules.commands.scan',
-                'modules.commands.enable',
-                'modules.commands.disable',
-                'modules.commands.list',
-            ]
-        );
+        ]);
     }
 
     public function registerModules()
     {
-        $this->app->booting(
-            function (Application $app) {
-                $app->make(ModulesManager::class)->register();
-            }
-        );
+        $this->app->booting(function (Application $app) {
+            $app->make(ModulesManager::class)->register();
+        });
     }
 }

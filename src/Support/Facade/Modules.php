@@ -7,6 +7,7 @@ use RabbitCMS\Modules\Contracts\ModulesManager;
 
 /**
  * Class Modules Facade.
+ * @method static has(string $name): bool
  */
 class Modules extends Facade
 {
