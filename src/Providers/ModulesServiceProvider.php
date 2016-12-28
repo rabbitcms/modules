@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 namespace RabbitCMS\Modules\Providers;
 
 use Illuminate\Contracts\Foundation\Application;
@@ -15,16 +15,22 @@ use RabbitCMS\Modules\Manager;
 use RabbitCMS\Modules\Module;
 use RabbitCMS\Modules\Support\Facade\Modules;
 
+/**
+ * Class ModulesServiceProvider.
+ * @package RabbitCMS\Modules
+ */
 class ModulesServiceProvider extends ServiceProvider
 {
-
+    /**
+     * @param Router $router
+     * @param ModulesManager $modules
+     */
     public function boot(Router $router, ModulesManager $modules)
     {
         $modules->enabled()->each(
             function (Module $module) use ($router) {
-                if (file_exists($path = $module->getPath('Http/routes.php'))) {
-                    require($path);
-                }
+                $path = $module->getPath('routes/web.php');
+                file_exists($path) && require($path);
             }
         );
     }
@@ -48,11 +54,11 @@ class ModulesServiceProvider extends ServiceProvider
      */
     protected function registerConfig()
     {
-        $configPath = realpath(__DIR__ . '/../../config/config.php');
+        $path = realpath(__DIR__ . '/../../config/config.php');
 
-        $this->mergeConfigFrom($configPath, "modules");
+        $this->mergeConfigFrom($path, "modules");
 
-        $this->publishes([$configPath => config_path('modules.php')]);
+        $this->publishes([$path => config_path('modules.php')]);
     }
 
     /**

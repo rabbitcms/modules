@@ -1,10 +1,14 @@
 <?php
-
+declare(strict_types=1);
 namespace RabbitCMS\Modules\Console;
 
 use Illuminate\Console\Command;
 use RabbitCMS\Modules\Contracts\ModulesManager;
 
+/**
+ * Class EnableCommand.
+ * @package RabbitCMS\Modules
+ */
 class EnableCommand extends Command
 {
     use ShowModulesTrait;

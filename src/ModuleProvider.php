@@ -1,11 +1,15 @@
 <?php
-
+declare(strict_types = 1);
 namespace RabbitCMS\Modules;
 
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider as IlluminateServiceProvider;
 use RabbitCMS\Modules\Contracts\ModulesManager;
 
+/**
+ * Class ModuleProvider.
+ * @package RabbitCMS\Modules
+ */
 abstract class ModuleProvider extends IlluminateServiceProvider
 {
     /**
@@ -18,6 +22,10 @@ abstract class ModuleProvider extends IlluminateServiceProvider
      */
     protected $modulesManager;
 
+    /**
+     * ModuleProvider constructor.
+     * @param Application $app
+     */
     public function __construct(Application $app)
     {
         parent::__construct($app);
@@ -30,7 +38,7 @@ abstract class ModuleProvider extends IlluminateServiceProvider
      *
      * @return string
      */
-    abstract protected function name();
+    abstract protected function name(): string;
 
     /**
      * Register the service provider.
@@ -38,11 +46,11 @@ abstract class ModuleProvider extends IlluminateServiceProvider
     public function register()
     {
         $this->registerConfig();
-        $this->registerTranslations();
+        $this->registerTrans();
         $this->registerViews();
-
-        if (is_dir($dir = $this->module->getPath('Database/Migrations'))) {
-            $this->loadMigrationsFrom($dir);
+        $directory = $this->module->getPath('database/migrations');
+        if (is_dir($directory)) {
+            $this->loadMigrationsFrom($directory);
         }
     }
 
@@ -51,26 +59,26 @@ abstract class ModuleProvider extends IlluminateServiceProvider
      */
     protected function registerConfig()
     {
-        $configPath = $this->module->getPath('Config/config.php');
+        $config_path = $this->module->getPath('config/config.php');
 
-        if (is_file($configPath)) {
-            $this->mergeConfigFrom($configPath, "module.{$this->module->getName()}");
+        if (is_file($config_path)) {
+            $this->mergeConfigFrom($config_path, "module.{$this->module->getName()}");
 
-            $this->publishes([$configPath => config_path("module/{$this->module->getName()}.php")]);
+            $this->publishes([$config_path => config_path("module/{$this->module->getName()}.php")]);
         }
     }
 
     /**
      * Register translations.
      */
-    protected function registerTranslations()
+    protected function registerTrans()
     {
-        $langPath = base_path("resources/lang/modules/{$this->module->getName()}");
+        $lang_path = base_path("resources/lang/modules/{$this->module->getName()}");
 
-        if (is_dir($langPath)) {
-            $this->loadTranslationsFrom($langPath, $this->module->getName());
+        if (is_dir($lang_path)) {
+            $this->loadTranslationsFrom($lang_path, $this->module->getName());
         } else {
-            $this->loadTranslationsFrom($this->module->getPath('Resources/lang'), $this->module->getName());
+            $this->loadTranslationsFrom($this->module->getPath('resources/lang'), $this->module->getName());
         }
     }
 
@@ -79,25 +87,25 @@ abstract class ModuleProvider extends IlluminateServiceProvider
      */
     protected function registerViews()
     {
-        $viewPath = base_path("resources/views/modules/{$this->module->getName()}");
+        $base_path = base_path("resources/views/modules/{$this->module->getName()}");
 
-        $sourcePath = $this->module->getPath('Resources/views');
+        $source_path = $this->module->getPath('resources/views');
 
-        $this->publishes([$sourcePath => $viewPath]);
+        $this->publishes([$source_path => $base_path]);
 
-        $this->loadViewsFrom([$viewPath, $sourcePath], $this->module->getName());
+        $this->loadViewsFrom([$base_path, $source_path], $this->module->getName());
     }
 
     /**
      * Get the specified configuration value.
      *
      * @param  string $key
-     * @param  mixed  $default
+     * @param  mixed $default
      *
      * @return mixed
      */
     protected function config($key, $default = null)
     {
-        $this->app->make('config')->get("module.{$this->module->getName()}.$key", $default);
+        return $this->app->make('config')->get("module.{$this->module->getName()}.$key", $default);
     }
 }

@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types = 1);
 namespace RabbitCMS\Modules;
 
 use FilesystemIterator;
@@ -9,6 +9,10 @@ use RecursiveDirectoryIterator;
 use RuntimeException;
 use SplFileInfo;
 
+/**
+ * Class Manager.
+ * @package RabbitCMS\Modules
+ */
 class Manager implements ModulesManager
 {
     /**
@@ -35,14 +39,14 @@ class Manager implements ModulesManager
     /**
      * @inheritdoc
      */
-    public function restore()
+    public function restore(): bool
     {
         if (!is_file($file = base_path('bootstrap/cache/modules.php'))) {
             return false;
         }
         $modules = new Repository();
 
-        foreach (require $file as $module) {
+        foreach ((require($file)) as $module) {
             $modules->add(new Module($module));
         }
         $this->modules = $modules;
@@ -53,15 +57,15 @@ class Manager implements ModulesManager
     /**
      * @inheritdoc
      */
-    public function scan($store = true)
+    public function scan($store = true): Repository
     {
         $modules = new Repository();
         foreach ((array)$this->config('paths', []) as $path) {
             if (!is_dir($path)) {
                 continue;
             }
-            foreach (new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS) as $file) {
-
+            $iterator = new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS);
+            foreach ($iterator as $file) {
                 /* @var SplFileInfo $file */
                 if (!$file->isDir()) {
                     continue;
@@ -75,7 +79,10 @@ class Manager implements ModulesManager
                 }
                 $module = $composer['extra']['module'];
                 if (empty($module['namespace'])) {
-                    if (isset($composer['autoload']['psr-4']) && is_array($composer['autoload']['psr-4']) && count($composer['autoload']['psr-4']) > 0) {
+                    if (isset($composer['autoload']['psr-4'])
+                        && is_array($composer['autoload']['psr-4'])
+                        && count($composer['autoload']['psr-4']) > 0
+                    ) {
                         $module['namespace'] = rtrim(key($composer['autoload']['psr-4']), '\\');
                     } else {
                         throw new RuntimeException('Module namespace must be set.');
@@ -83,11 +90,11 @@ class Manager implements ModulesManager
                 }
 
                 if (empty($module['name'])) {
-                    $names = explode('/',$composer['name']);
+                    $names = explode('/', $composer['name']);
                     $module['name'] = $names[1];
                 }
 
-                $module['description'] = array_key_exists('description',$composer) ? $composer['description'] : '';
+                $module['description'] = array_key_exists('description', $composer) ? $composer['description'] : '';
 
                 $module['path'] = $file->getPathname();
                 $module = new Module($module);
@@ -118,11 +125,11 @@ class Manager implements ModulesManager
      * Get the specified configuration value.
      *
      * @param string $key
-     * @param mixed  $default
+     * @param mixed $default
      *
      * @return mixed
      */
-    public function config($key, $default = null)
+    public function config(string $key, $default = null)
     {
         return $this->app->make('config')->get('modules.' . $key, $default);
     }
@@ -132,12 +139,17 @@ class Manager implements ModulesManager
      *
      * @return string
      */
-    public function getAssetsPath()
+    public function getAssetsPath(): string
     {
         return $this->config('assets', 'modules');
     }
 
-    private function getRelativePath($from, $to)
+    /**
+     * @param string $from
+     * @param string $to
+     * @return string
+     */
+    private function getRelativePath(string $from, string $to): string
     {
         // some compatibility fixes for Windows paths
         $from = is_dir($from) ? rtrim($from, '\/') . '/' : $from;
@@ -176,7 +188,10 @@ class Manager implements ModulesManager
      */
     public function store()
     {
-        file_put_contents(base_path('bootstrap/cache/modules.php'), "<?php return " . var_export($this->all()->toArray(), true) . ";\n");
+        file_put_contents(
+            base_path('bootstrap/cache/modules.json'),
+            json_encode($this->all()->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+        );
     }
 
     /**
@@ -184,7 +199,7 @@ class Manager implements ModulesManager
      *
      * @return Repository
      */
-    public function all()
+    public function all(): Repository
     {
         if ($this->modules === null && !$this->restore()) {
             $this->modules = new Repository();
@@ -221,34 +236,27 @@ class Manager implements ModulesManager
      */
     public function register()
     {
-        $this->enabled()->each(
-            function (Module $module) {
-                array_map(
-                    function ($provider) {
-                        $this->app->register($provider);
-                    },
-                    $module->getProviders()
-                );
-            }
-        );
+        $this->enabled()->each(function (Module $module) {
+            array_map(function ($provider) {
+                $this->app->register($provider);
+            }, $module->getProviders());
+        });
     }
 
     /**
      * @inheritdoc
      */
-    public function enabled()
+    public function enabled(): Repository
     {
-        return $this->all()->filter(
-            function (Module $module) {
-                return $module->isEnabled();
-            }
-        );
+        return $this->all()->filter(function (Module $module) {
+            return $module->isEnabled();
+        });
     }
 
     /**
      * @inheritdoc
      */
-    public function has($name)
+    public function has($name): bool
     {
         return $this->all()->has($name);
     }
@@ -256,7 +264,7 @@ class Manager implements ModulesManager
     /**
      * @inheritdoc
      */
-    public function get($name)
+    public function get($name): Module
     {
         return $this->all()->get($name);
     }
@@ -264,12 +272,12 @@ class Manager implements ModulesManager
     /**
      * Generate a URL to an application asset.
      *
-     * @param  string    $path
+     * @param  string $path
      * @param  bool|null $secure
      *
      * @return string
      */
-    public function asset($path, $secure = null)
+    public function asset(string $path, $secure = null):string
     {
         list($name, $url) = explode(':', $path);
 

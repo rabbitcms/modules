@@ -1,10 +1,14 @@
 <?php
-
+declare(strict_types = 1);
 namespace RabbitCMS\Modules\Contracts;
 
 use RabbitCMS\Modules\Module;
 use RabbitCMS\Modules\Repository;
 
+/**
+ * Interface ModulesManager.
+ * @package RabbitCMS\Modules
+ */
 interface ModulesManager
 {
     /**
@@ -14,14 +18,14 @@ interface ModulesManager
      *
      * @return Repository
      */
-    public function scan($store = true);
+    public function scan($store = true): Repository;
 
     /**
      * Get enabled modules.
      *
      * @return Repository
      */
-    public function enabled();
+    public function enabled(): Repository;
 
     /**
      * Enable module.
@@ -42,7 +46,7 @@ interface ModulesManager
      *
      * @return bool
      */
-    public function restore();
+    public function restore(): bool;
 
     /**
      * Store modules.
@@ -54,19 +58,19 @@ interface ModulesManager
      *
      * @return bool
      */
-    public function has($name);
+    public function has($name): bool;
 
     /**
      * @param string $name
      *
      * @return Module
      */
-    public function get($name);
+    public function get($name): Module;
 
     /**
      * Get all modules.
      *
      * @return Repository
      */
-    public function all();
+    public function all(): Repository;
 }

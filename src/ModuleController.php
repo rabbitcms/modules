@@ -1,13 +1,18 @@
 <?php
-
+declare(strict_types=1);
 namespace RabbitCMS\Modules;
 
 use Illuminate\Config\Repository as ConfigRepository;
 use Illuminate\Foundation\Application;
 use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Support\Facades\Route;
 use Illuminate\View\View;
 use RabbitCMS\Modules\Contracts\ModulesManager;
 
+/**
+ * Class ModuleController.
+ * @package RabbitCMS\Modules
+ */
 abstract class ModuleController extends BaseController
 {
     /**
@@ -89,7 +94,7 @@ abstract class ModuleController extends BaseController
         $response = parent::callAction($method, $parameters);
 
         if ($this->cache > 0) {
-            $response = \Route::prepareResponse($this->app->make('request'), $response);
+            $response = Route::prepareResponse($this->app->make('request'), $response);
             $response->headers->addCacheControlDirective('public');
             $response->headers->addCacheControlDirective('max-age', floor($this->cache * 60));
         }
@@ -117,7 +122,8 @@ abstract class ModuleController extends BaseController
      */
     public function trans($id, array $parameters = [], $domain = 'messages', $locale = null)
     {
-        return $this->app->make('translator')->trans($this->module()->getName() . '::' . $id, $parameters, $domain, $locale);
+        return $this->app->make('translator')
+            ->trans($this->module()->getName() . '::' . $id, $parameters, $domain, $locale);
     }
 
     /**

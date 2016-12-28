@@ -1,10 +1,14 @@
 <?php
-
+declare(strict_types = 1);
 namespace RabbitCMS\Modules\Console;
 
 use Illuminate\Console\Command;
 use RabbitCMS\Modules\Contracts\ModulesManager;
 
+/**
+ * Class ListCommand.
+ * @package RabbitCMS\Modules
+ */
 class ListCommand extends Command
 {
     use ShowModulesTrait;

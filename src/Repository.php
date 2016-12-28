@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types = 1);
 namespace RabbitCMS\Modules;
 
 use ArrayIterator;
@@ -8,6 +8,10 @@ use Illuminate\Contracts\Support\Arrayable;
 use IteratorAggregate;
 use RabbitCMS\Modules\Exceptions\ModuleNotFoundException;
 
+/**
+ * Class Repository.
+ * @package RabbitCMS\Modules
+ */
 class Repository implements IteratorAggregate, Countable, Arrayable
 {
     /**
@@ -20,7 +24,7 @@ class Repository implements IteratorAggregate, Countable, Arrayable
      *
      * @return int
      */
-    public function count()
+    public function count(): int
     {
         return count($this->modules);
     }
@@ -30,7 +34,7 @@ class Repository implements IteratorAggregate, Countable, Arrayable
      *
      * @return ArrayIterator
      */
-    public function getIterator()
+    public function getIterator(): ArrayIterator
     {
         return new ArrayIterator($this->modules);
     }
@@ -42,7 +46,7 @@ class Repository implements IteratorAggregate, Countable, Arrayable
      *
      * @return bool
      */
-    public function has($name)
+    public function has($name): bool
     {
         return array_key_exists($name, $this->modules);
     }
@@ -55,7 +59,7 @@ class Repository implements IteratorAggregate, Countable, Arrayable
      * @return Module
      * @throws ModuleNotFoundException
      */
-    public function get($name)
+    public function get($name): Module
     {
         if (array_key_exists($name, $this->modules)) {
             return $this->modules[$name];
@@ -82,7 +86,7 @@ class Repository implements IteratorAggregate, Countable, Arrayable
      *
      * @return Repository
      */
-    public function filter(callable $callback)
+    public function filter(callable $callback):Repository
     {
         $result = new Repository();
         foreach ($this->modules as $name => $module) {
@@ -109,7 +113,7 @@ class Repository implements IteratorAggregate, Countable, Arrayable
     /**
      * @inheritdoc
      */
-    function toArray()
+    public function toArray(): array
     {
         return $this->map(
             function (Module $module) {
@@ -125,7 +129,7 @@ class Repository implements IteratorAggregate, Countable, Arrayable
      *
      * @return array
      */
-    public function map(callable $callback):array
+    public function map(callable $callback): array
     {
         $result = [];
         foreach ($this->modules as $name => $module) {
@@ -140,7 +144,7 @@ class Repository implements IteratorAggregate, Countable, Arrayable
      *
      * @return Module[]
      */
-    public function all()
+    public function all(): array
     {
         return $this->modules;
     }

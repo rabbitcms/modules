@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 if (!function_exists('asset_module')) {
     /**
@@ -15,6 +16,6 @@ if (!function_exists('asset_module')) {
             $asset = "$module:$asset";
         }
 
-        return \Modules::asset($asset);
+        return \RabbitCMS\Modules\Support\Facade\Modules::asset($asset);
     }
 }
