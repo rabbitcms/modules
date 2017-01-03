@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 namespace RabbitCMS\Modules\Providers;
 
 use Illuminate\Contracts\Foundation\Application;
@@ -15,18 +15,32 @@ use RabbitCMS\Modules\Manager;
 use RabbitCMS\Modules\Module;
 use RabbitCMS\Modules\Support\Facade\Modules;
 
+/**
+ * Class ModulesServiceProvider.
+ */
 class ModulesServiceProvider extends ServiceProvider
 {
 
+    /**
+     * @param Router         $router
+     * @param ModulesManager $modules
+     */
     public function boot(Router $router, ModulesManager $modules)
     {
-        $modules->enabled()->each(
-            function (Module $module) use ($router) {
-                if (file_exists($path = $module->getPath('Http/routes.php'))) {
-                    require($path);
-                }
+        $modules->enabled()->each(function (Module $module) use ($router) {
+            if (file_exists($path = $module->getPath('routes/web.php'))) {
+            } elseif (file_exists($path = $module->getPath('Http/routes.php'))) {
+            } else {
+                return;
             }
-        );
+
+            $router->group([
+                'as' => $module->getName() . '.',
+                'namespace' => $module->getNamespace() . '\\Http\\Controllers'
+            ], function (Router $router) use ($path) {
+                require($path);
+            });
+        });
     }
 
     /**
