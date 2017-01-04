@@ -163,4 +163,17 @@ class Module implements Arrayable
     {
         return $this->description;
     }
+
+    /**
+     * Get the specified configuration value.
+     *
+     * @param  string $key
+     * @param  mixed $default
+     *
+     * @return mixed
+     */
+    public function config($key, $default = null)
+    {
+        return app('config')->get("module.{$this->getName()}.{$key}", $default);
+    }
 }

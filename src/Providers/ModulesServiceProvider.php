@@ -30,7 +30,15 @@ class ModulesServiceProvider extends ServiceProvider
         $modules->enabled()->each(
             function (Module $module) use ($router) {
                 $path = $module->getPath('routes/web.php');
-                file_exists($path) && require($path);
+
+                if (file_exists($path)) {
+                    $router->group([
+                        'as' => $module->getName() . '.',
+                        'namespace' => $module->getNamespace() . '\\Http\\Controllers'
+                    ], function (Router $router) use ($path, $module) {
+                        require($path);
+                    });
+                }
             }
         );
     }

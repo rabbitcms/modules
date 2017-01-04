@@ -50,19 +50,6 @@ abstract class ModuleController extends BaseController
     }
 
     /**
-     * Get the specified configuration value.
-     *
-     * @param  string $key
-     * @param  mixed  $default
-     *
-     * @return mixed
-     */
-    public function config($key, $default = null)
-    {
-        return $this->config->get("module.{$this->module()->getName()}.$key", $default);
-    }
-
-    /**
      * Get module.
      *
      * @return Module
