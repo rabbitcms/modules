@@ -1,5 +1,5 @@
 <?php
-declare(strict_types=1);
+declare(strict_types = 1);
 namespace RabbitCMS\Modules;
 
 use Illuminate\Contracts\Foundation\Application;
@@ -51,7 +51,9 @@ abstract class ModuleProvider extends IlluminateServiceProvider
         $this->registerTranslations();
         $this->registerViews();
 
-        if (is_dir($dir = $this->module->getPath('Database/Migrations'))) {
+        if (is_dir($dir = $this->module->getPath('database/migrations'))
+            || is_dir($dir = $this->module->getPath('Database/Migrations'))
+        ) {
             $this->loadMigrationsFrom($dir);
         }
     }
@@ -61,9 +63,9 @@ abstract class ModuleProvider extends IlluminateServiceProvider
      */
     protected function registerConfig()
     {
-        $configPath = $this->module->getPath('Config/config.php');
-
-        if (is_file($configPath)) {
+        if (is_file($configPath = $this->module->getPath('config/config.php'))
+            || is_file($configPath = $this->module->getPath('Config/config.php'))
+        ) {
             $this->mergeConfigFrom($configPath, "module.{$this->module->getName()}");
             $this->publishes([$configPath => config_path("module/{$this->module->getName()}.php")]);
         }
@@ -78,7 +80,9 @@ abstract class ModuleProvider extends IlluminateServiceProvider
 
         if (is_dir($langPath)) {
             $this->loadTranslationsFrom($langPath, $this->module->getName());
-        } else {
+        } elseif (is_dir($dir = $this->module->getPath('resources/lang'))
+            || is_dir($dir = $this->module->getPath('Resources/lang'))
+        ) {
             $this->loadTranslationsFrom($this->module->getPath('Resources/lang'), $this->module->getName());
         }
     }
@@ -90,18 +94,19 @@ abstract class ModuleProvider extends IlluminateServiceProvider
     {
         $viewPath = base_path("resources/views/modules/{$this->module->getName()}");
 
-        $sourcePath = $this->module->getPath('Resources/views');
-
-        $this->publishes([$sourcePath => $viewPath]);
-
-        $this->loadViewsFrom([$viewPath, $sourcePath], $this->module->getName());
+        if (is_dir($sourcePath = $this->module->getPath('resources/views'))
+            || is_dir($sourcePath = $this->module->getPath('Resources/views'))
+        ) {
+            $this->publishes([$sourcePath => $viewPath]);
+            $this->loadViewsFrom([$viewPath, $sourcePath], $this->module->getName());
+        }
     }
 
     /**
      * Get the specified configuration value.
      *
      * @param  string $key
-     * @param  mixed  $default
+     * @param  mixed $default
      *
      * @return mixed
      */

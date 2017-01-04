@@ -108,9 +108,11 @@ class Manager implements ModulesManager
                     $module->setEnabled($this->modules->get($module->getName())->isEnabled());
                 }
                 $path = public_path($this->getAssetsPath() . '/' . $module->getName());
-                $public = $module->getPath('Assets');
+                if (file_exists($path)) {
+                    unlink($path);
+                }
 
-                if (!file_exists($path) && is_dir($public)) {
+                if (is_dir($public = $module->getPath('public')) || is_dir($public = $module->getPath('Assets'))) {
                     $link = defined('PHP_WINDOWS_VERSION_MAJOR') ? $public : $this->getRelativePath($path, $public);
                     symlink($link, $path);
                 }
@@ -131,7 +133,7 @@ class Manager implements ModulesManager
      * Get the specified configuration value.
      *
      * @param string $key
-     * @param mixed  $default
+     * @param mixed $default
      *
      * @return mixed
      */
@@ -286,7 +288,7 @@ class Manager implements ModulesManager
     /**
      * Generate a URL to an application asset.
      *
-     * @param  string    $path
+     * @param  string $path
      * @param  bool|null $secure
      *
      * @return string

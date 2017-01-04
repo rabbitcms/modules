@@ -43,20 +43,6 @@ abstract class ModuleController extends BaseController
     }
 
     /**
-     * Get the specified configuration value.
-     *
-     * @deprecated
-     * @param  string $key
-     * @param  mixed  $default
-     *
-     * @return mixed
-     */
-    public function config(string $key, $default = null)
-    {
-        return $this->module()->config($key, $default);
-    }
-
-    /**
      * Get module.
      *
      * @return Module
@@ -107,17 +93,17 @@ abstract class ModuleController extends BaseController
     }
 
     /**
-     * @param string $id
+     * @param string $key
      * @param array  $parameters
      * @param string $domain
      * @param null   $locale
      *
      * @return array|null|string
      */
-    public function trans($id, array $parameters = [], $domain = 'messages', $locale = null)
+    public function trans(string $key, array $parameters = [], $domain = 'messages', $locale = null)
     {
-        $id = $this->module()->getName() . '::' . $id;
-        return $this->app->make('translator')->trans($id, $parameters, $domain, $locale);
+        $key = $this->module()->getName() . '::' . $key;
+        return $this->app->make('translator')->trans($key, $parameters, $domain, $locale);
     }
 
     /**
