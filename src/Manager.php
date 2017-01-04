@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types = 1);
 namespace RabbitCMS\Modules;
 
 use FilesystemIterator;
@@ -9,8 +9,15 @@ use RecursiveDirectoryIterator;
 use RuntimeException;
 use SplFileInfo;
 
+/**
+ * Class Manager.
+ *
+ * @package RabbitCMS\Modules
+ */
 class Manager implements ModulesManager
 {
+    const CACHE_FILE = 'bootstrap/cache/modules.json';
+
     /**
      * @var Application
      */
@@ -37,12 +44,16 @@ class Manager implements ModulesManager
      */
     public function restore()
     {
-        if (!is_file($file = base_path('bootstrap/cache/modules.php'))) {
+        if (!is_file($file = base_path(self::CACHE_FILE))) {
             return false;
         }
         $modules = new Repository();
 
-        foreach (require $file as $module) {
+        $data = json_decode(file_get_contents($file), true);
+        if ($data === null) {
+            return false;
+        }
+        foreach ($data as $module) {
             $modules->add(new Module($module));
         }
         $this->modules = $modules;
@@ -61,7 +72,6 @@ class Manager implements ModulesManager
                 continue;
             }
             foreach (new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS) as $file) {
-
                 /* @var SplFileInfo $file */
                 if (!$file->isDir()) {
                     continue;
@@ -75,7 +85,10 @@ class Manager implements ModulesManager
                 }
                 $module = $composer['extra']['module'];
                 if (empty($module['namespace'])) {
-                    if (isset($composer['autoload']['psr-4']) && is_array($composer['autoload']['psr-4']) && count($composer['autoload']['psr-4']) > 0) {
+                    if (isset($composer['autoload']['psr-4'])
+                        && is_array($composer['autoload']['psr-4'])
+                        && count($composer['autoload']['psr-4']) > 0
+                    ) {
                         $module['namespace'] = rtrim(key($composer['autoload']['psr-4']), '\\');
                     } else {
                         throw new RuntimeException('Module namespace must be set.');
@@ -83,11 +96,11 @@ class Manager implements ModulesManager
                 }
 
                 if (empty($module['name'])) {
-                    $names = explode('/',$composer['name']);
+                    $names = explode('/', $composer['name']);
                     $module['name'] = $names[1];
                 }
 
-                $module['description'] = array_key_exists('description',$composer) ? $composer['description'] : '';
+                $module['description'] = array_key_exists('description', $composer) ? $composer['description'] : '';
 
                 $module['path'] = $file->getPathname();
                 $module = new Module($module);
@@ -137,7 +150,13 @@ class Manager implements ModulesManager
         return $this->config('assets', 'modules');
     }
 
-    private function getRelativePath($from, $to)
+    /**
+     * @param string $from
+     * @param string $to
+     *
+     * @return string
+     */
+    private function getRelativePath(string $from, string $to): string
     {
         // some compatibility fixes for Windows paths
         $from = is_dir($from) ? rtrim($from, '\/') . '/' : $from;
@@ -176,7 +195,10 @@ class Manager implements ModulesManager
      */
     public function store()
     {
-        file_put_contents(base_path('bootstrap/cache/modules.php'), "<?php return " . var_export($this->all()->toArray(), true) . ";\n");
+        file_put_contents(
+            base_path(self::CACHE_FILE),
+            json_encode($this->all()->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
+        );
     }
 
     /**

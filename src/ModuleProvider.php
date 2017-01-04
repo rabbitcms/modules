@@ -1,11 +1,16 @@
 <?php
-
+declare(strict_types=1);
 namespace RabbitCMS\Modules;
 
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider as IlluminateServiceProvider;
 use RabbitCMS\Modules\Contracts\ModulesManager;
 
+/**
+ * Class ModuleProvider.
+ *
+ * @package RabbitCMS\Modules
+ */
 abstract class ModuleProvider extends IlluminateServiceProvider
 {
     /**
@@ -18,6 +23,11 @@ abstract class ModuleProvider extends IlluminateServiceProvider
      */
     protected $modulesManager;
 
+    /**
+     * ModuleProvider constructor.
+     *
+     * @param Application $app
+     */
     public function __construct(Application $app)
     {
         parent::__construct($app);
@@ -55,7 +65,6 @@ abstract class ModuleProvider extends IlluminateServiceProvider
 
         if (is_file($configPath)) {
             $this->mergeConfigFrom($configPath, "module.{$this->module->getName()}");
-
             $this->publishes([$configPath => config_path("module/{$this->module->getName()}.php")]);
         }
     }
@@ -98,6 +107,6 @@ abstract class ModuleProvider extends IlluminateServiceProvider
      */
     protected function config($key, $default = null)
     {
-        $this->app->make('config')->get("module.{$this->module->getName()}.$key", $default);
+        return $this->app->make('config')->get("module.{$this->module->getName()}.$key", $default);
     }
 }

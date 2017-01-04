@@ -1,13 +1,17 @@
 <?php
-
+declare(strict_types=1);
 namespace RabbitCMS\Modules;
 
-use Illuminate\Config\Repository as ConfigRepository;
 use Illuminate\Foundation\Application;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\View\View;
 use RabbitCMS\Modules\Contracts\ModulesManager;
 
+/**
+ * Class ModuleController
+ *
+ * @package RabbitCMS\Modules
+ */
 abstract class ModuleController extends BaseController
 {
     /**
@@ -19,11 +23,6 @@ abstract class ModuleController extends BaseController
      * @var string
      */
     protected $module = '';
-
-    /**
-     * @var ConfigRepository
-     */
-    protected $config;
 
     /**
      * @var integer|float
@@ -38,7 +37,6 @@ abstract class ModuleController extends BaseController
     public function __construct(Application $app)
     {
         $this->app = $app;
-        $this->config = $app->make('config');
         if (method_exists($this, 'init')) {
             $this->app->call([$this, 'init']);
         }
@@ -47,14 +45,15 @@ abstract class ModuleController extends BaseController
     /**
      * Get the specified configuration value.
      *
+     * @deprecated
      * @param  string $key
      * @param  mixed  $default
      *
      * @return mixed
      */
-    public function config($key, $default = null)
+    public function config(string $key, $default = null)
     {
-        return $this->config->get("module.{$this->module()->getName()}.$key", $default);
+        return $this->module()->config($key, $default);
     }
 
     /**
@@ -117,7 +116,8 @@ abstract class ModuleController extends BaseController
      */
     public function trans($id, array $parameters = [], $domain = 'messages', $locale = null)
     {
-        return $this->app->make('translator')->trans($this->module()->getName() . '::' . $id, $parameters, $domain, $locale);
+        $id = $this->module()->getName() . '::' . $id;
+        return $this->app->make('translator')->trans($id, $parameters, $domain, $locale);
     }
 
     /**

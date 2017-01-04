@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 namespace RabbitCMS\Modules\Support\Facade;
 
 use Illuminate\Support\Facades\Facade;

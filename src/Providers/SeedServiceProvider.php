@@ -1,10 +1,15 @@
 <?php
-
+declare(strict_types=1);
 namespace RabbitCMS\Modules\Providers;
 
 use RabbitCMS\Modules\Console\SeedCommand;
 use RabbitCMS\Modules\Seeders\DatabaseSeeder;
 
+/**
+ * Class SeedServiceProvider.
+ *
+ * @package RabbitCMS\Modules
+ */
 class SeedServiceProvider extends \Illuminate\Database\SeedServiceProvider
 {
     /**

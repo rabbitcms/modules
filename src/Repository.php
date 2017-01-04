@@ -1,5 +1,5 @@
 <?php
-
+declare(strict_types=1);
 namespace RabbitCMS\Modules;
 
 use ArrayIterator;
@@ -8,6 +8,11 @@ use Illuminate\Contracts\Support\Arrayable;
 use IteratorAggregate;
 use RabbitCMS\Modules\Exceptions\ModuleNotFoundException;
 
+/**
+ * Class Repository.
+ *
+ * @package RabbitCMS\Modules
+ */
 class Repository implements IteratorAggregate, Countable, Arrayable
 {
     /**
@@ -109,7 +114,7 @@ class Repository implements IteratorAggregate, Countable, Arrayable
     /**
      * @inheritdoc
      */
-    function toArray()
+    public function toArray()
     {
         return $this->map(
             function (Module $module) {

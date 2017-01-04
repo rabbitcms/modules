@@ -1,10 +1,15 @@
 <?php
-
+declare(strict_types=1);
 namespace RabbitCMS\Modules\Console;
 
 use Illuminate\Console\Command;
 use RabbitCMS\Modules\Contracts\ModulesManager;
 
+/**
+ * Class DisableCommand.
+ *
+ * @package RabbitCMS\Modules
+ */
 class DisableCommand extends Command
 {
     use ShowModulesTrait;

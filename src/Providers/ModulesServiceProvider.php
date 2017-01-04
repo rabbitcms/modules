@@ -37,7 +37,7 @@ class ModulesServiceProvider extends ServiceProvider
             $router->group([
                 'as' => $module->getName() . '.',
                 'namespace' => $module->getNamespace() . '\\Http\\Controllers'
-            ], function (Router $router) use ($path) {
+            ], function (Router $router) use ($path, $module) {
                 require($path);
             });
         });
