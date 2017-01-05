@@ -48,9 +48,10 @@ abstract class ModuleProvider extends IlluminateServiceProvider
         $this->registerConfig();
         $this->registerTrans();
         $this->registerViews();
-        $directory = $this->module->getPath('database/migrations');
-        if (is_dir($directory)) {
-            $this->loadMigrationsFrom($directory);
+        if (is_dir($dir = $this->module->getPath('src/Database/Migrations'))
+            || is_dir($dir = $this->module->getPath('database/migrations'))
+        ) {
+            $this->loadMigrationsFrom($dir);
         }
     }
 
@@ -59,12 +60,12 @@ abstract class ModuleProvider extends IlluminateServiceProvider
      */
     protected function registerConfig()
     {
-        $config_path = $this->module->getPath('config/config.php');
+        $path = $this->module->getPath('config/config.php');
 
-        if (is_file($config_path)) {
-            $this->mergeConfigFrom($config_path, "module.{$this->module->getName()}");
+        if (is_file($path)) {
+            $this->mergeConfigFrom($path, "module.{$this->module->getName()}");
 
-            $this->publishes([$config_path => config_path("module/{$this->module->getName()}.php")]);
+            $this->publishes([$path => config_path("module/{$this->module->getName()}.php")]);
         }
     }
 
@@ -73,10 +74,10 @@ abstract class ModuleProvider extends IlluminateServiceProvider
      */
     protected function registerTrans()
     {
-        $lang_path = base_path("resources/lang/modules/{$this->module->getName()}");
+        $path = base_path("resources/lang/modules/{$this->module->getName()}");
 
-        if (is_dir($lang_path)) {
-            $this->loadTranslationsFrom($lang_path, $this->module->getName());
+        if (is_dir($path)) {
+            $this->loadTranslationsFrom($path, $this->module->getName());
         } else {
             $this->loadTranslationsFrom($this->module->getPath('resources/lang'), $this->module->getName());
         }
@@ -87,13 +88,13 @@ abstract class ModuleProvider extends IlluminateServiceProvider
      */
     protected function registerViews()
     {
-        $base_path = base_path("resources/views/modules/{$this->module->getName()}");
+        $base = base_path("resources/views/modules/{$this->module->getName()}");
 
-        $source_path = $this->module->getPath('resources/views');
+        $source = $this->module->getPath('resources/views');
 
-        $this->publishes([$source_path => $base_path]);
+        $this->publishes([$source => $base]);
 
-        $this->loadViewsFrom([$base_path, $source_path], $this->module->getName());
+        $this->loadViewsFrom([$base, $source], $this->module->getName());
     }
 
     /**
