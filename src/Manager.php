@@ -104,7 +104,10 @@ class Manager implements ModulesManager
                 $path = public_path($this->getAssetsPath() . '/' . $module->getName());
                 $public = $module->getPath('public');
 
-                if (!file_exists($path) && is_dir($public)) {
+                if (is_link($path)) {
+                    unlink($path);
+                }
+                if (is_dir($public)) {
                     $link = defined('PHP_WINDOWS_VERSION_MAJOR') ? $public : $this->getRelativePath($path, $public);
                     symlink($link, $path);
                 }
