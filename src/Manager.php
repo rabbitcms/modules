@@ -15,6 +15,7 @@ use SplFileInfo;
  */
 class Manager implements ModulesManager
 {
+    const CACHE_FILE = 'bootstrap/cache/modules.php';
     /**
      * @var Application
      */
@@ -41,14 +42,17 @@ class Manager implements ModulesManager
      */
     public function restore(): bool
     {
-        if (!is_file($file = base_path('bootstrap/cache/modules.php'))) {
+        if (!is_file($file = base_path(self::CACHE_FILE))) {
             return false;
         }
         $modules = new Repository();
 
-        foreach ((require($file)) as $module) {
+        $data = (array) json_decode(file_get_contents($file), true);
+
+        foreach ($data as $module) {
             $modules->add(new Module($module));
         }
+
         $this->modules = $modules;
 
         return true;
@@ -192,7 +196,7 @@ class Manager implements ModulesManager
     public function store()
     {
         file_put_contents(
-            base_path('bootstrap/cache/modules.json'),
+            base_path(self::CACHE_FILE),
             json_encode($this->all()->toArray(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
         );
     }
