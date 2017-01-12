@@ -1,13 +1,13 @@
 <?php
-declare(strict_types=1);
+declare(strict_types = 1);
 namespace RabbitCMS\Modules;
 
-use Illuminate\Contracts\Support\Arrayable;
+use RabbitCMS\Modules\Contracts\PackageContract;
 
 /**
  * Class Module.
  */
-class Module implements Arrayable
+class Module implements PackageContract
 {
     /**
      * Module path.
@@ -77,7 +77,7 @@ class Module implements Arrayable
      *
      * @return string
      */
-    public function getName()
+    public function getName(): string
     {
         return $this->name;
     }
@@ -85,7 +85,7 @@ class Module implements Arrayable
     /**
      * Get module namespace.
      */
-    public function getNamespace()
+    public function getNamespace(): string
     {
         return $this->namespace;
     }
@@ -93,7 +93,7 @@ class Module implements Arrayable
     /**
      * @return bool
      */
-    public function isEnabled()
+    public function isEnabled(): bool
     {
         return $this->enabled;
     }
@@ -103,7 +103,7 @@ class Module implements Arrayable
      *
      * @param bool $value
      */
-    public function setEnabled($value)
+    public function setEnabled(bool $value = true)
     {
         $this->enabled = $value;
     }
@@ -111,7 +111,7 @@ class Module implements Arrayable
     /**
      * @return bool
      */
-    public function isSystem()
+    public function isSystem(): bool
     {
         return $this->system;
     }
@@ -123,7 +123,7 @@ class Module implements Arrayable
      *
      * @return string
      */
-    public function getPath($path = '')
+    public function getPath(string $path = ''): string
     {
         return $this->path . ($path ? '/' . $path : '');
     }
@@ -144,13 +144,13 @@ class Module implements Arrayable
     public function toArray()
     {
         return [
-            'path'        => $this->path,
-            'name'        => $this->name,
+            'path' => $this->path,
+            'name' => $this->name,
             'description' => $this->description,
-            'namespace'   => $this->namespace,
-            'enabled'     => $this->enabled,
-            'providers'   => $this->providers,
-            'system'      => $this->system,
+            'namespace' => $this->namespace,
+            'enabled' => $this->enabled,
+            'providers' => $this->providers,
+            'system' => $this->system,
         ];
     }
 
@@ -159,7 +159,7 @@ class Module implements Arrayable
      *
      * @return string
      */
-    public function getDescription()
+    public function getDescription():string
     {
         return $this->description;
     }
@@ -172,7 +172,7 @@ class Module implements Arrayable
      *
      * @return mixed
      */
-    public function config($key, $default = null)
+    public function config(string $key, $default = null)
     {
         return app('config')->get("module.{$this->getName()}.{$key}", $default);
     }

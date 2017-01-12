@@ -7,7 +7,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\View;
-use RabbitCMS\Modules\Contracts\ModulesManager;
+use RabbitCMS\Modules\Managers\Modules;
 
 /**
  * Class ModuleController.
@@ -58,7 +58,7 @@ abstract class ModuleController extends BaseController
     {
         static $module = null;
         if ($module === null) {
-            $module = $this->app->make(ModulesManager::class)->get($this->module);
+            $module = $this->app->make(Modules::class)->get($this->module);
         }
 
         return $module;
@@ -96,21 +96,21 @@ abstract class ModuleController extends BaseController
      */
     public function asset($path)
     {
-        return asset_module($path, $this->module()->getName());
+        return module_asset($this->module()->getName(), $path);
     }
 
     /**
-     * @param string $id
+     * @param string $key
      * @param array  $parameters
      * @param string $domain
      * @param null   $locale
      *
      * @return array|null|string
      */
-    public function trans($id, array $parameters = [], $domain = 'messages', $locale = null)
+    public function trans($key, array $parameters = [], $domain = 'messages', $locale = null)
     {
         return $this->app->make('translator')
-            ->trans($this->module()->getName() . '::' . $id, $parameters, $domain, $locale);
+            ->trans($this->module()->getName() . '::' . $key, $parameters, $domain, $locale);
     }
 
     /**

@@ -1,10 +1,9 @@
 <?php
-
+declare(strict_types = 1);
 return [
-    'paths'    => [
+    'paths' => [
         base_path('modules'),
         base_path('vendor/rabbitcms')
     ],
-    'composer' => true,
-    'assets'   => 'modules',
+    'assets' => 'modules',
 ];

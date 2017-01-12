@@ -3,7 +3,7 @@ declare(strict_types=1);
 namespace RabbitCMS\Modules\Support\Facade;
 
 use Illuminate\Support\Facades\Facade;
-use RabbitCMS\Modules\Contracts\ModulesManager;
+use RabbitCMS\Modules\Managers\Modules as ModulesManager;
 
 /**
  * Class Modules Facade.

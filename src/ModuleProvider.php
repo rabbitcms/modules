@@ -4,7 +4,8 @@ namespace RabbitCMS\Modules;
 
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider as IlluminateServiceProvider;
-use RabbitCMS\Modules\Contracts\ModulesManager;
+use RabbitCMS\Modules\Managers\Modules;
+use RabbitCMS\Modules\Support\Facade\Themes;
 
 /**
  * Class ModuleProvider.
@@ -18,7 +19,7 @@ abstract class ModuleProvider extends IlluminateServiceProvider
     protected $module;
 
     /**
-     * @var ModulesManager
+     * @var Modules
      */
     protected $modulesManager;
 
@@ -29,7 +30,7 @@ abstract class ModuleProvider extends IlluminateServiceProvider
     public function __construct(Application $app)
     {
         parent::__construct($app);
-        $this->modulesManager = $this->app->make(ModulesManager::class);
+        $this->modulesManager = $this->app->make(Modules::class);
         $this->module = $this->modulesManager->get($this->name());
     }
 
@@ -94,7 +95,9 @@ abstract class ModuleProvider extends IlluminateServiceProvider
 
         $this->publishes([$source => $base]);
 
-        $this->loadViewsFrom([$base, $source], $this->module->getName());
+        $paths = [$base, $source];
+
+        $this->loadViewsFrom($paths, $this->module->getName());
     }
 
     /**

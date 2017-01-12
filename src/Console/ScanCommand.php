@@ -3,7 +3,7 @@ declare(strict_types = 1);
 namespace RabbitCMS\Modules\Console;
 
 use Illuminate\Console\Command;
-use RabbitCMS\Modules\Contracts\ModulesManager;
+use RabbitCMS\Modules\Managers\Modules;
 
 /**
  * Class ScanCommand.
@@ -28,16 +28,16 @@ class ScanCommand extends Command
     protected $description = 'Rescan available modules';
 
     /**
-     * @var ModulesManager
+     * @var Modules
      */
     protected $modules;
 
     /**
      * ScanCommand constructor.
      *
-     * @param ModulesManager $modules
+     * @param Modules $modules
      */
-    public function __construct(ModulesManager $modules)
+    public function __construct(Modules $modules)
     {
         parent::__construct();
         $this->modules = $modules;
@@ -50,6 +50,7 @@ class ScanCommand extends Command
      */
     public function fire()
     {
-        $this->showModules($this->modules->scan(!$this->option('pretend')));
+        $this->modules->scan(!$this->option('pretend'));
+        $this->showModules($this->modules->all());
     }
 }

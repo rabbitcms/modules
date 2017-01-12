@@ -6,6 +6,7 @@ use ArrayIterator;
 use Countable;
 use Illuminate\Contracts\Support\Arrayable;
 use IteratorAggregate;
+use RabbitCMS\Modules\Contracts\PackageContract;
 use RabbitCMS\Modules\Exceptions\ModuleNotFoundException;
 
 /**
@@ -17,7 +18,7 @@ class Repository implements IteratorAggregate, Countable, Arrayable
     /**
      * @var Module[]
      */
-    protected $modules = [];
+    protected $items = [];
 
     /**
      * Get modules count.
@@ -26,7 +27,7 @@ class Repository implements IteratorAggregate, Countable, Arrayable
      */
     public function count(): int
     {
-        return count($this->modules);
+        return count($this->items);
     }
 
     /**
@@ -36,7 +37,7 @@ class Repository implements IteratorAggregate, Countable, Arrayable
      */
     public function getIterator(): ArrayIterator
     {
-        return new ArrayIterator($this->modules);
+        return new ArrayIterator($this->items);
     }
 
     /**
@@ -48,7 +49,7 @@ class Repository implements IteratorAggregate, Countable, Arrayable
      */
     public function has($name): bool
     {
-        return array_key_exists($name, $this->modules);
+        return array_key_exists($name, $this->items);
     }
 
     /**
@@ -56,15 +57,15 @@ class Repository implements IteratorAggregate, Countable, Arrayable
      *
      * @param string $name
      *
-     * @return Module
+     * @return PackageContract
      * @throws ModuleNotFoundException
      */
-    public function get($name): Module
+    public function get($name): PackageContract
     {
-        if (array_key_exists($name, $this->modules)) {
-            return $this->modules[$name];
+        if (array_key_exists($name, $this->items)) {
+            return $this->items[$name];
         }
-        throw new Exceptions\ModuleNotFoundException("Module '$name' not found.");
+        throw new Exceptions\ModuleNotFoundException("Package '$name' not found.");
     }
 
     /**
@@ -74,8 +75,8 @@ class Repository implements IteratorAggregate, Countable, Arrayable
      */
     public function each(callable $callback)
     {
-        foreach ($this->modules as $name => $module) {
-            $callback($module, $name);
+        foreach ($this->items as $name => $item) {
+            $callback($item, $name);
         }
     }
 
@@ -89,9 +90,9 @@ class Repository implements IteratorAggregate, Countable, Arrayable
     public function filter(callable $callback):Repository
     {
         $result = new Repository();
-        foreach ($this->modules as $name => $module) {
-            if ($callback($module, $name)) {
-                $result->add($module);
+        foreach ($this->items as $name => $item) {
+            if ($callback($item, $name)) {
+                $result->add($item);
             }
         }
 
@@ -101,12 +102,12 @@ class Repository implements IteratorAggregate, Countable, Arrayable
     /**
      * Add module to repository.
      *
-     * @param Module[] ...$modules
+     * @param PackageContract[] ...$items
      */
-    public function add(Module ...$modules)
+    public function add(PackageContract ...$items)
     {
-        foreach ($modules as $module) {
-            $this->modules[$module->getName()] = $module;
+        foreach ($items as $item) {
+            $this->items[$item->getName()] = $item;
         }
     }
 
@@ -115,11 +116,9 @@ class Repository implements IteratorAggregate, Countable, Arrayable
      */
     public function toArray(): array
     {
-        return $this->map(
-            function (Module $module) {
-                return $module->toArray();
-            }
-        );
+        return $this->map(function (PackageContract $item) {
+            return $item->toArray();
+        });
     }
 
     /**
@@ -131,21 +130,16 @@ class Repository implements IteratorAggregate, Countable, Arrayable
      */
     public function map(callable $callback): array
     {
-        $result = [];
-        foreach ($this->modules as $name => $module) {
-            $result[$name] = $callback($module, $name);
-        }
-
-        return $result;
+        return array_map($callback, $this->items);
     }
 
     /**
      * Get all module.
      *
-     * @return Module[]
+     * @return PackageContract[]
      */
     public function all(): array
     {
-        return $this->modules;
+        return $this->items;
     }
 }

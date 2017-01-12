@@ -3,7 +3,7 @@ declare(strict_types=1);
 namespace RabbitCMS\Modules\Console;
 
 use Illuminate\Console\Command;
-use RabbitCMS\Modules\Contracts\ModulesManager;
+use RabbitCMS\Modules\Managers\Modules;
 
 /**
  * Class EnableCommand.
@@ -27,16 +27,16 @@ class EnableCommand extends Command
     protected $description = 'Enable the module.';
 
     /**
-     * @var ModulesManager
+     * @var Modules
      */
     protected $modules;
 
     /**
      * ScanCommand constructor.
      *
-     * @param ModulesManager $modules
+     * @param Modules $modules
      */
-    public function __construct(ModulesManager $modules)
+    public function __construct(Modules $modules)
     {
         parent::__construct();
         $this->modules = $modules;

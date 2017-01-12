@@ -9,7 +9,7 @@ use RabbitCMS\Modules\Repository;
  * Interface ModulesManager.
  * @package RabbitCMS\Modules
  */
-interface ModulesManager
+interface PackagesManager
 {
     /**
      * Get all found modules.
@@ -18,7 +18,7 @@ interface ModulesManager
      *
      * @return Repository
      */
-    public function scan($store = true): Repository;
+    public function scan($store = true);
 
     /**
      * Get enabled modules.
@@ -63,9 +63,9 @@ interface ModulesManager
     /**
      * @param string $name
      *
-     * @return Module
+     * @return PackageContract
      */
-    public function get($name): Module;
+    public function get($name): PackageContract;
 
     /**
      * Get all modules.
@@ -73,4 +73,11 @@ interface ModulesManager
      * @return Repository
      */
     public function all(): Repository;
+
+    /**
+     * Get assets path.
+     *
+     * @return string
+     */
+    public function getAssetsPath(): string;
 }

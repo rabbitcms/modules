@@ -3,7 +3,7 @@ declare(strict_types = 1);
 namespace RabbitCMS\Modules\Seeders;
 
 use Illuminate\Database\Seeder;
-use RabbitCMS\Modules\Contracts\ModulesManager;
+use RabbitCMS\Modules\Managers\Modules;
 use RabbitCMS\Modules\Module;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -27,7 +27,7 @@ class DatabaseSeeder extends Seeder
         }
         $this->run = true;
 
-        /* @var ModulesManager $modules */
+        /* @var Modules $modules */
         $modules = $this->container->make('modules');
 
         $tree = [];

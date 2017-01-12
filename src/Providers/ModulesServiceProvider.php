@@ -5,15 +5,17 @@ namespace RabbitCMS\Modules\Providers;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Foundation\AliasLoader;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use RabbitCMS\Modules\Console\DisableCommand;
 use RabbitCMS\Modules\Console\EnableCommand;
 use RabbitCMS\Modules\Console\ListCommand;
 use RabbitCMS\Modules\Console\ScanCommand;
-use RabbitCMS\Modules\Contracts\ModulesManager;
-use RabbitCMS\Modules\Manager;
+use RabbitCMS\Modules\Managers\Modules;
+use RabbitCMS\Modules\Managers\Themes;
 use RabbitCMS\Modules\Module;
-use RabbitCMS\Modules\Support\Facade\Modules;
+use RabbitCMS\Modules\Support\Facade\Modules as ModulesFacade;
+use RabbitCMS\Modules\Support\Facade\Themes as ThemesFacade;
 
 /**
  * Class ModulesServiceProvider.
@@ -23,9 +25,9 @@ class ModulesServiceProvider extends ServiceProvider
 {
     /**
      * @param Router $router
-     * @param ModulesManager $modules
+     * @param Modules $modules
      */
-    public function boot(Router $router, ModulesManager $modules)
+    public function boot(Router $router, Modules $modules)
     {
         $modules->enabled()->each(
             function (Module $module) use ($router) {
@@ -48,7 +50,7 @@ class ModulesServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        AliasLoader::getInstance(['Modules' => Modules::class]);
+        AliasLoader::getInstance(['Modules' => ModulesFacade::class,]);
 
         $this->registerConfig();
         $this->registerServices();
@@ -74,8 +76,8 @@ class ModulesServiceProvider extends ServiceProvider
      */
     protected function registerServices()
     {
-        $this->app->singleton(['modules' => ModulesManager::class], function ($app) {
-            return new Manager($app);
+        $this->app->singleton(['modules' => Modules::class], function ($app) {
+            return new Modules($app);
         });
     }
 
@@ -108,7 +110,7 @@ class ModulesServiceProvider extends ServiceProvider
     public function registerModules()
     {
         $this->app->booting(function (Application $app) {
-            $app->make(ModulesManager::class)->register();
+            $app->make(Modules::class)->register();
         });
     }
 }
