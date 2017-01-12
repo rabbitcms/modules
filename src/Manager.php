@@ -15,7 +15,7 @@ use SplFileInfo;
  */
 class Manager implements ModulesManager
 {
-    const CACHE_FILE = 'bootstrap/cache/modules.php';
+    const CACHE_FILE = 'bootstrap/cache/modules.json';
     /**
      * @var Application
      */
