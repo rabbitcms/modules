@@ -31,7 +31,9 @@ abstract class ModuleController extends BaseController
     protected $config;
 
     /**
-     * @var integer|float
+     * Page cache in seconds.
+     *
+     * @var int
      */
     protected $cache = 0;
 
@@ -83,7 +85,7 @@ abstract class ModuleController extends BaseController
         if ($this->cache > 0) {
             $response = Route::prepareResponse($this->app->make('request'), $response);
             $response->headers->addCacheControlDirective('public');
-            $response->headers->addCacheControlDirective('max-age', floor($this->cache * 60));
+            $response->headers->addCacheControlDirective('max-age', (int)$this->cache);
         }
 
         return $response;
