@@ -10,7 +10,6 @@ use RabbitCMS\Modules\Contracts\PackageContract;
 use RabbitCMS\Modules\Contracts\PackagesManager;
 use RabbitCMS\Modules\Module;
 use RuntimeException;
-use SplFileInfo;
 
 /**
  * Class Modules.
@@ -43,11 +42,9 @@ class Modules implements PackagesManager
     }
 
     /**
-     * @param SplFileInfo $file
-     * @param array $composer
-     * @return Module|null
+     * @inheritdoc
      */
-    protected function checkPackage(SplFileInfo $file, array $composer)
+    protected function checkPackage(string $dir, array $composer)
     {
         if (empty($composer['extra']['module']) || !is_array($composer['extra']['module'])) {
             return null;
@@ -70,7 +67,7 @@ class Modules implements PackagesManager
         }
 
         $module['description'] = array_key_exists('description', $composer) ? $composer['description'] : '';
-        $module['path'] = $file->getPathname();
+        $module['path'] = $dir;
         $module = new Module($module);
 
         $this->updateLink(

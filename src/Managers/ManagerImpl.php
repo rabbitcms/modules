@@ -2,11 +2,9 @@
 declare(strict_types = 1);
 namespace RabbitCMS\Modules\Managers;
 
-use FilesystemIterator;
 use Illuminate\Contracts\Foundation\Application;
 use RabbitCMS\Modules\Contracts\PackageContract;
 use RabbitCMS\Modules\Repository;
-use RecursiveDirectoryIterator;
 use RuntimeException;
 use SplFileInfo;
 
@@ -50,7 +48,12 @@ trait ManagerImpl
         $data = (array)json_decode(file_get_contents($file), true);
 
         foreach ($data as $module) {
-            $repository->add($this->restoreItem($module));
+            $module = $this->restoreItem($module);
+            if (!is_dir($module->getPath())) {
+                //disable modules if not exist
+                $module->setEnabled(false);
+            }
+            $repository->add($module);
         }
 
         $this->repository = $repository;
@@ -156,7 +159,7 @@ trait ManagerImpl
         if (is_link($path)) {
             unlink($path);
         }
-        if (is_dir($link)) {
+        if (is_dir($link) && $link !== public_path()) {
             if (!defined('PHP_WINDOWS_VERSION_MAJOR')) {
                 $link = $this->getRelativePath($path, $link);
             }
@@ -210,21 +213,17 @@ trait ManagerImpl
     {
         $repository = new Repository();
         foreach ((array)$this->config('paths', []) as $path) {
-            if (!is_dir($path)) {
-                continue;
-            }
-            $iterator = new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS);
-            foreach ($iterator as $file) {
+            foreach (glob($path, GLOB_NOSORT | GLOB_BRACE | GLOB_ONLYDIR) as $dir) {
                 /* @var SplFileInfo $file */
-                if (!$file->isDir()) {
+                if (!is_dir($dir)) {
                     continue;
                 }
-                if (!is_file($composerFile = $file->getPathname() . '/composer.json')) {
+                if (!is_file($composerFile = $dir . '/composer.json')) {
                     continue;
                 }
                 $composer = json_decode(file_get_contents($composerFile), true);
 
-                $package = $this->checkPackage($file, $composer);
+                $package = $this->checkPackage($dir, $composer);
                 if ($package !== null) {
                     if ($this->repository && $this->repository->has($package->getName())) {
                         $package->setEnabled($this->repository->get($package->getName())->isEnabled());
@@ -247,11 +246,11 @@ trait ManagerImpl
     abstract protected function restoreItem(array $item): PackageContract;
 
     /**
-     * @param SplFileInfo $file
+     * @param string $dir
      * @param array $composer
      * @return PackageContract|null
      */
-    abstract protected function checkPackage(SplFileInfo $file, array $composer);
+    abstract protected function checkPackage(string $dir, array $composer);
 
     /**
      * Get cache file path.
