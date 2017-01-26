@@ -15,6 +15,7 @@ use RabbitCMS\Modules\Support\Facade\Modules as ModulesFacade;
 /**
  * Class ModulesServiceProvider.
  * @package RabbitCMS\Modules
+ * @property Application $app
  */
 class ModulesServiceProvider extends ServiceProvider
 {
@@ -22,6 +23,36 @@ class ModulesServiceProvider extends ServiceProvider
      * @param Modules $modules
      */
     public function boot(Modules $modules)
+    {
+        if ($this->app->routesAreCached()) {
+            $this->loadCachedRoutes();
+        } else {
+            $this->loadRoutes($modules);
+
+            $this->app->booted(function () {
+                $this->app->make('router')->getRoutes()->refreshNameLookups();
+            });
+        }
+    }
+
+    /**
+     * Load the cached routes for the application.
+     *
+     * @return void
+     */
+    protected function loadCachedRoutes()
+    {
+        $this->app->booted(function () {
+            require $this->app->getCachedRoutesPath();
+        });
+    }
+
+    /**
+     * Load the application routes.
+     *
+     * @param Modules $modules
+     */
+    protected function loadRoutes(Modules $modules)
     {
         $modules->loadRoutes('web');
     }
