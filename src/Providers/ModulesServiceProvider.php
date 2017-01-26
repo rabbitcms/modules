@@ -2,16 +2,14 @@
 declare(strict_types=1);
 namespace RabbitCMS\Modules\Providers;
 
-use Illuminate\Foundation\Application;
 use Illuminate\Foundation\AliasLoader;
-use Illuminate\Routing\Router;
+use Illuminate\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use RabbitCMS\Modules\Console\DisableCommand;
 use RabbitCMS\Modules\Console\EnableCommand;
 use RabbitCMS\Modules\Console\ListCommand;
 use RabbitCMS\Modules\Console\ScanCommand;
 use RabbitCMS\Modules\Managers\Modules;
-use RabbitCMS\Modules\Module;
 use RabbitCMS\Modules\Support\Facade\Modules as ModulesFacade;
 
 /**
@@ -21,25 +19,11 @@ use RabbitCMS\Modules\Support\Facade\Modules as ModulesFacade;
 class ModulesServiceProvider extends ServiceProvider
 {
     /**
-     * @param Router $router
      * @param Modules $modules
      */
-    public function boot(Router $router, Modules $modules)
+    public function boot(Modules $modules)
     {
-        $modules->enabled()->each(
-            function (Module $module) use ($router) {
-                $path = $module->getPath('routes/web.php');
-
-                if (file_exists($path)) {
-                    $router->group([
-                        'as' => $module->getName() . '.',
-                        'namespace' => $module->getNamespace() . '\\Http\\Controllers'
-                    ], function (Router $router) use ($path, $module) {
-                        require($path);
-                    });
-                }
-            }
-        );
+        $modules->loadRoutes('web');
     }
 
     /**

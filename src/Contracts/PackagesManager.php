@@ -2,7 +2,6 @@
 declare(strict_types = 1);
 namespace RabbitCMS\Modules\Contracts;
 
-use RabbitCMS\Modules\Module;
 use RabbitCMS\Modules\Repository;
 
 /**

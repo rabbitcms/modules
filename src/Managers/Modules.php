@@ -3,12 +3,14 @@ declare(strict_types = 1);
 namespace RabbitCMS\Modules\Managers;
 
 use Illuminate\Foundation\Application;
+use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
-use RabbitCMS\Modules\Contracts\PackagesManager;
+use Illuminate\Support\Str;
 use RabbitCMS\Modules\Contracts\PackageContract;
+use RabbitCMS\Modules\Contracts\PackagesManager;
 use RabbitCMS\Modules\Module;
-use SplFileInfo;
 use RuntimeException;
+use SplFileInfo;
 
 /**
  * Class Modules.
@@ -138,5 +140,37 @@ class Modules implements PackagesManager
     public function config(string $key, $default = null)
     {
         return $this->app->make('config')->get('modules.' . $key, $default);
+    }
+
+    /**
+     * Load modules routes.
+     *
+     * @param string        $scope
+     * @param callable|null $groupResolver
+     */
+    public function loadRoutes(string $scope = 'web', callable $groupResolver = null)
+    {
+        $this->app->make('router')->group([
+            'as'=> $scope === 'web' ? '' : "$scope.",
+        ], function (Router $router) use ($groupResolver, $scope) {
+            $namespace = $scope === 'web' ? null : Str::studly($scope);
+            $this->enabled()->each(function (Module $module) use ($groupResolver, $scope, $router, $namespace) {
+                $path = $module->getPath("routes/{$scope}.php");
+                if (file_exists($path)) {
+                    $router->group([
+                        'as' => $module->getName() . '.',
+                        'namespace' => $module->getNamespace() . '\\Http\\Controllers'
+                    ], function (Router $router) use ($module, $groupResolver, $path, $namespace) {
+                        $options = ['namespace' => $namespace];
+                        if ($groupResolver) {
+                            $options = $this->app->call($groupResolver, ['module' => $module, 'options'=>$options]);
+                        }
+                        $router->group($options, function (Router $router) use ($path, $module) {
+                            require($path);
+                        });
+                    });
+                }
+            });
+        });
     }
 }

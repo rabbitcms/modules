@@ -2,12 +2,12 @@
 declare(strict_types = 1);
 namespace RabbitCMS\Modules\Managers;
 
+use FilesystemIterator;
 use Illuminate\Contracts\Foundation\Application;
 use RabbitCMS\Modules\Contracts\PackageContract;
 use RabbitCMS\Modules\Repository;
-use RuntimeException;
 use RecursiveDirectoryIterator;
-use FilesystemIterator;
+use RuntimeException;
 use SplFileInfo;
 
 /**
