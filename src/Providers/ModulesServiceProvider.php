@@ -5,17 +5,14 @@ namespace RabbitCMS\Modules\Providers;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Foundation\AliasLoader;
 use Illuminate\Routing\Router;
-use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use RabbitCMS\Modules\Console\DisableCommand;
 use RabbitCMS\Modules\Console\EnableCommand;
 use RabbitCMS\Modules\Console\ListCommand;
 use RabbitCMS\Modules\Console\ScanCommand;
 use RabbitCMS\Modules\Managers\Modules;
-use RabbitCMS\Modules\Managers\Themes;
 use RabbitCMS\Modules\Module;
 use RabbitCMS\Modules\Support\Facade\Modules as ModulesFacade;
-use RabbitCMS\Modules\Support\Facade\Themes as ThemesFacade;
 
 /**
  * Class ModulesServiceProvider.
@@ -76,7 +73,7 @@ class ModulesServiceProvider extends ServiceProvider
      */
     protected function registerServices()
     {
-        $this->app->singleton(['modules' => Modules::class], function ($app) {
+        $this->app->singleton(Modules::class, function ($app) {
             return new Modules($app);
         });
     }
@@ -84,19 +81,19 @@ class ModulesServiceProvider extends ServiceProvider
     public function registerCommands()
     {
         $this->app->singleton('modules.commands.scan', function () {
-            return new ScanCommand($this->app->make('modules'));
+            return new ScanCommand($this->app->make(Modules::class));
         });
 
         $this->app->singleton('modules.commands.enable', function () {
-            return new EnableCommand($this->app->make('modules'));
+            return new EnableCommand($this->app->make(Modules::class));
         });
 
         $this->app->singleton('modules.commands.disable', function () {
-            return new DisableCommand($this->app->make('modules'));
+            return new DisableCommand($this->app->make(Modules::class));
         });
 
         $this->app->singleton('modules.commands.list', function () {
-            return new ListCommand($this->app->make('modules'));
+            return new ListCommand($this->app->make(Modules::class));
         });
 
         $this->commands([
