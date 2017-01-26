@@ -2,6 +2,7 @@
 declare(strict_types = 1);
 namespace RabbitCMS\Modules\Managers;
 
+use Illuminate\Foundation\Application;
 use RabbitCMS\Modules\Contracts\PackagesManager;
 use RabbitCMS\Modules\Contracts\PackageContract;
 use RabbitCMS\Modules\Module;
@@ -87,19 +88,21 @@ class Modules implements PackagesManager
 
     /**
      * Register module providers.
+     *
+     * @param Application $app
      */
-    public function register()
+    public function register(Application $app)
     {
-        $this->enabled()->each(
-            function (Module $module) {
-                array_map(
-                    function ($provider) {
-                        $this->app->register($provider);
-                    },
-                    $module->getProviders()
-                );
-            }
-        );
+        $this->enabled()->each(function (Module $module) use ($app) {
+            array_map(function ($class) use ($app) {
+                $provider = $app->resolveProvider($class);
+                if ($provider->isDeferred()) {
+                    $app->addDeferredServices(array_fill_keys($provider->provides(), $provider));
+                } else {
+                    $app->register($provider);
+                }
+            }, $module->getProviders());
+        });
     }
 
     /**

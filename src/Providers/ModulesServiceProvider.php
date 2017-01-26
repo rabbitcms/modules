@@ -2,7 +2,7 @@
 declare(strict_types=1);
 namespace RabbitCMS\Modules\Providers;
 
-use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Foundation\Application;
 use Illuminate\Foundation\AliasLoader;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
@@ -107,7 +107,7 @@ class ModulesServiceProvider extends ServiceProvider
     public function registerModules()
     {
         $this->app->booting(function (Application $app) {
-            $app->make(Modules::class)->register();
+            $app->make(Modules::class)->register($app);
         });
     }
 }
