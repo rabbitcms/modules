@@ -167,7 +167,6 @@ class Modules implements PackagesManager
                             ),
                             'prefix' => $module->config("routes.{$scope}.prefix", $module->getName()),
                         ];
-                        var_dump($options);
                         $domain = $module->config("routes.{$scope}.domain");
                         if ($domain !== null) {
                             $options['domain'] = $domain;
