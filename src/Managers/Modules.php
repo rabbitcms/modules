@@ -165,7 +165,7 @@ class Modules implements PackagesManager
                                 "routes.{$scope}.as",
                                 $module->getName() . '.'
                             ),
-                            'prefix' => $module->config("routes.{$scope}.prefix"),
+                            'prefix' => $module->config("routes.{$scope}.prefix", $module->getName()),
                         ];
                         var_dump($options);
                         $domain = $module->config("routes.{$scope}.domain");
