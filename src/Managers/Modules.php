@@ -150,15 +150,28 @@ class Modules implements PackagesManager
         $this->app->make('router')->group([
             'as'=> $scope === 'web' ? '' : "$scope.",
         ], function (Router $router) use ($groupResolver, $scope) {
-            $namespace = $scope === 'web' ? null : Str::studly($scope);
-            $this->enabled()->each(function (Module $module) use ($groupResolver, $scope, $router, $namespace) {
+            $this->enabled()->each(function (Module $module) use ($groupResolver, $scope, $router) {
                 $path = $module->getPath("routes/{$scope}.php");
                 if (file_exists($path)) {
                     $router->group([
-                        'as' => $module->getName() . '.',
                         'namespace' => $module->getNamespace() . '\\Http\\Controllers'
-                    ], function (Router $router) use ($module, $groupResolver, $path, $namespace) {
-                        $options = ['namespace' => $namespace];
+                    ], function (Router $router) use ($module, $groupResolver, $path, $scope) {
+                        $options = [
+                            'namespace' => $module->config(
+                                "routes.{$scope}.namespace",
+                                $scope === 'web' ? null : Str::studly($scope)
+                            ),
+                            'as' => $module->config(
+                                "routes.{$scope}.as",
+                                $module->getName() . '.'
+                            ),
+                            'prefix' => $module->config("routes.{$scope}.prefix"),
+                        ];
+                        var_dump($options);
+                        $domain = $module->config("routes.{$scope}.domain");
+                        if ($domain !== null) {
+                            $options['domain'] = $domain;
+                        }
                         if ($groupResolver) {
                             $options = $this->app->call($groupResolver, ['module' => $module, 'options'=>$options]);
                         }
