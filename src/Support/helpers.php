@@ -32,3 +32,18 @@ if (!function_exists('module_asset')) {
         return Modules::asset($module, $asset);
     }
 }
+
+if (!function_exists('module_path')) {
+    /**
+     * Get path for module
+     *
+     * @param string $module
+     * @param string $path
+     *
+     * @return string
+     */
+    function module_path(string $module, string $path = ''): string
+    {
+        return Modules::get($module)->getPath() . ($path ? '/' . trim($path, '/') : '');
+    }
+}
