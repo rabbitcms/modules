@@ -44,6 +44,6 @@ if (!function_exists('module_path')) {
      */
     function module_path(string $module, string $path = ''): string
     {
-        return Modules::get($module)->getPath() . ($path ? '/' . trim($path, '/') : '');
+        return Modules::get($module)->getPath($path);
     }
 }
