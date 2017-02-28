@@ -2,10 +2,13 @@
 declare(strict_types = 1);
 namespace RabbitCMS\Modules\Managers;
 
-use RabbitCMS\Modules\Contracts\PackagesManager;
+use Illuminate\Foundation\Application;
+use Illuminate\Routing\Router;
+use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use RabbitCMS\Modules\Contracts\PackageContract;
+use RabbitCMS\Modules\Contracts\PackagesManager;
 use RabbitCMS\Modules\Module;
-use SplFileInfo;
 use RuntimeException;
 
 /**
@@ -39,11 +42,9 @@ class Modules implements PackagesManager
     }
 
     /**
-     * @param SplFileInfo $file
-     * @param array $composer
-     * @return Module|null
+     * @inheritdoc
      */
-    protected function checkPackage(SplFileInfo $file, array $composer)
+    protected function checkPackage(string $dir, array $composer)
     {
         if (empty($composer['extra']['module']) || !is_array($composer['extra']['module'])) {
             return null;
@@ -66,7 +67,7 @@ class Modules implements PackagesManager
         }
 
         $module['description'] = array_key_exists('description', $composer) ? $composer['description'] : '';
-        $module['path'] = $file->getPathname();
+        $module['path'] = $dir;
         $module = new Module($module);
 
         $this->updateLink(
@@ -87,19 +88,22 @@ class Modules implements PackagesManager
 
     /**
      * Register module providers.
+     *
+     * @param Application $app
      */
-    public function register()
+    public function register(Application $app)
     {
-        $this->enabled()->each(
-            function (Module $module) {
-                array_map(
-                    function ($provider) {
-                        $this->app->register($provider);
-                    },
-                    $module->getProviders()
-                );
-            }
-        );
+        $this->enabled()->each(function (Module $module) use ($app) {
+            array_map(function ($class) use ($app) {
+                /* @var ServiceProvider $provider */
+                $provider = new $class($app);
+                if ($provider->isDeferred()) {
+                    $app->addDeferredServices(array_fill_keys($provider->provides(), $provider));
+                } else {
+                    $app->register($provider);
+                }
+            }, $module->getProviders());
+        });
     }
 
     /**
@@ -133,5 +137,35 @@ class Modules implements PackagesManager
     public function config(string $key, $default = null)
     {
         return $this->app->make('config')->get('modules.' . $key, $default);
+    }
+
+    /**
+     * Load modules routes.
+     *
+     * @param string        $scope
+     */
+    public function loadRoutes(string $scope = 'web')
+    {
+        $this->app->make('router')->group([
+            'as'=> $scope === 'web' ? '' : "$scope.",
+        ], function (Router $router) use ($scope) {
+            $this->enabled()->each(function (Module $module) use ($scope, $router) {
+                $path = $module->getPath("routes/{$scope}.php");
+                if (file_exists($path)) {
+                    $router->group([
+                        'namespace' => $module->getNamespace() . '\\Http\\Controllers'
+                    ], function (Router $router) use ($module, $path, $scope) {
+                        $options = array_merge([
+                            'namespace' => $scope === 'web' ? null : Str::studly($scope),
+                            'as' =>  $module->getName() . '.',
+                            'prefix' => $module->getName()
+                        ], $module->config("routes.{$scope}", []));
+                        $router->group($options, function (Router $router) use ($path, $module) {
+                            require($path);
+                        });
+                    });
+                }
+            });
+        });
     }
 }

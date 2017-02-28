@@ -28,7 +28,7 @@ class DatabaseSeeder extends Seeder
         $this->run = true;
 
         /* @var Modules $modules */
-        $modules = $this->container->make('modules');
+        $modules = $this->container->make(Modules::class);
 
         $tree = [];
         $modules->enabled()->each(

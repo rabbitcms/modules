@@ -5,7 +5,6 @@ namespace RabbitCMS\Modules;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider as IlluminateServiceProvider;
 use RabbitCMS\Modules\Managers\Modules;
-use RabbitCMS\Modules\Support\Facade\Themes;
 
 /**
  * Class ModuleProvider.
@@ -98,6 +97,16 @@ abstract class ModuleProvider extends IlluminateServiceProvider
         $paths = [$base, $source];
 
         $this->loadViewsFrom($paths, $this->module->getName());
+    }
+
+    /**
+     * @param callable $loader
+     */
+    protected function loadRoutes(callable $loader)
+    {
+        if (!$this->app->routesAreCached()) {
+            $this->app->call($loader);
+        }
     }
 
     /**

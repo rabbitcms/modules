@@ -1,26 +1,39 @@
 <?php
-declare(strict_types=1);
+declare(strict_types = 1);
 namespace RabbitCMS\Modules\Providers;
 
+use Illuminate\Support\ServiceProvider;
 use RabbitCMS\Modules\Console\SeedCommand;
 use RabbitCMS\Modules\Seeders\DatabaseSeeder;
 
 /**
  * Class SeedServiceProvider.
+ *
  * @package RabbitCMS\Modules
  */
-class SeedServiceProvider extends \Illuminate\Database\SeedServiceProvider
+class SeedServiceProvider extends ServiceProvider
 {
     /**
-     * Register the seed console command.
-     *
-     * @return void
+     * {@inheritdoc}
      */
-    protected function registerSeedCommand()
+    //protected $defer = true;
+
+    /**
+     * Register the seed console command.
+     */
+    public function register()
     {
         $this->app->singleton(DatabaseSeeder::class);
-        $this->app->singleton('command.seed', function ($app) {
-            return new SeedCommand($app['db']);
+        $this->app->extend('command.seed', function () {
+            return new SeedCommand($this->app['db']);
         });
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function provides()
+    {
+        return ['command.seed'];
     }
 }
