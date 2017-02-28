@@ -30,11 +30,6 @@ interface PackageContract extends Arrayable
     public function setEnabled(bool $value = true);
 
     /**
-     * @return bool
-     */
-    public function isSystem():bool;
-
-    /**
      * Get package path.
      *
      * @param string $path
