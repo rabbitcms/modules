@@ -147,7 +147,8 @@ class Modules implements PackagesManager
     public function loadRoutes(string $scope = 'web')
     {
         $this->app->make('router')->group([
-            'as'=> $scope === 'web' ? '' : "$scope.",
+            'as' => $scope === 'web' ? '' : "{$scope}.",
+            'middleware' => $scope
         ], function (Router $router) use ($scope) {
             $this->enabled()->each(function (Module $module) use ($scope, $router) {
                 $path = $module->getPath("routes/{$scope}.php");
