@@ -147,8 +147,7 @@ class Modules implements PackagesManager
     public function loadRoutes(string $scope = 'web')
     {
         $this->app->make('router')->group([
-            'as' => $scope === 'web' ? '' : "{$scope}.",
-            'middleware' => $scope
+            'as' => $scope === 'web' ? '' : "{$scope}."
         ], function (Router $router) use ($scope) {
             $this->enabled()->each(function (Module $module) use ($scope, $router) {
                 $path = $module->getPath("routes/{$scope}.php");
@@ -159,7 +158,8 @@ class Modules implements PackagesManager
                         $options = array_merge([
                             'namespace' => $scope === 'web' ? null : Str::studly($scope),
                             'as' =>  $module->getName() . '.',
-                            'prefix' => $module->getName()
+                            'prefix' => $module->getName(),
+                            'middleware' => $scope
                         ], $module->config("routes.{$scope}", []));
                         $router->group($options, function (Router $router) use ($path, $module) {
                             require($path);
