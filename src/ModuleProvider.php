@@ -48,6 +48,14 @@ abstract class ModuleProvider extends IlluminateServiceProvider
         $this->registerConfig();
         $this->registerTrans();
         $this->registerViews();
+        $this->registerMigrations();
+    }
+
+    /**
+     * Register migrations.
+     */
+    protected function registerMigrations()
+    {
         if (is_dir($dir = $this->module->getPath('src/Database/Migrations'))
             || is_dir($dir = $this->module->getPath('database/migrations'))
         ) {
