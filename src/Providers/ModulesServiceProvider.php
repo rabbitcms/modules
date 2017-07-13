@@ -4,6 +4,7 @@ namespace RabbitCMS\Modules\Providers;
 
 use Illuminate\Foundation\AliasLoader;
 use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Bootstrap\BootProviders;
 use Illuminate\Support\ServiceProvider;
 use RabbitCMS\Modules\Console\DisableCommand;
 use RabbitCMS\Modules\Console\EnableCommand;
@@ -67,7 +68,6 @@ class ModulesServiceProvider extends ServiceProvider
         $this->registerConfig();
         $this->registerServices();
         $this->registerCommands();
-
         $this->registerModules();
     }
 
@@ -121,7 +121,7 @@ class ModulesServiceProvider extends ServiceProvider
 
     public function registerModules()
     {
-        $this->app->booting(function (Application $app) {
+        $this->app->beforeBootstrapping(BootProviders::class, function (Application $app) {
             $app->make(Modules::class)->register($app);
         });
     }
