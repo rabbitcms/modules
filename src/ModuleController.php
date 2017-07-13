@@ -104,15 +104,14 @@ abstract class ModuleController extends BaseController
     /**
      * @param string $key
      * @param array  $parameters
-     * @param string $domain
      * @param null   $locale
      *
      * @return array|null|string
      */
-    public function trans($key, array $parameters = [], $domain = 'messages', $locale = null)
+    public function trans($key, array $parameters = [], $locale = null)
     {
         return $this->app->make('translator')
-            ->trans($this->module()->getName() . '::' . $key, $parameters, $domain, $locale);
+            ->trans($this->module()->getName() . '::' . $key, $parameters, $locale);
     }
 
     /**
