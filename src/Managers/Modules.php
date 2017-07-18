@@ -102,7 +102,7 @@ class Modules implements PackagesManager
                 } else {
                     $app->register($provider);
                 }
-            }, $module->getProviders());
+            }, array_filter($module->getProviders(), 'class_exists'));
         });
     }
 
