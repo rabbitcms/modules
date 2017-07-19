@@ -6,24 +6,20 @@ use Illuminate\Config\Repository as ConfigRepository;
 use Illuminate\Foundation\Application;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Route;
-use Illuminate\View\View;
-use RabbitCMS\Modules\Managers\Modules;
+use RabbitCMS\Modules\Support\ModuleConcerns;
 
 /**
  * Class ModuleController.
  * @package RabbitCMS\Modules
+ * @deprecated
  */
 abstract class ModuleController extends BaseController
 {
+    use ModuleConcerns;
     /**
      * @var Application $app
      */
     protected $app;
-
-    /**
-     * @var string
-     */
-    protected $module = '';
 
     /**
      * @var ConfigRepository
@@ -52,21 +48,6 @@ abstract class ModuleController extends BaseController
     }
 
     /**
-     * Get module.
-     *
-     * @return Module
-     */
-    public function module()
-    {
-        static $module = null;
-        if ($module === null) {
-            $module = $this->app->make(Modules::class)->get($this->module);
-        }
-
-        return $module;
-    }
-
-    /**
      * Execute an action on the controller.
      *
      * @param  string $method
@@ -91,49 +72,5 @@ abstract class ModuleController extends BaseController
         return $response;
     }
 
-    /**
-     * @param string $path
-     *
-     * @return string
-     */
-    public function asset($path)
-    {
-        return module_asset($this->module()->getName(), $path);
-    }
 
-    /**
-     * @param string $key
-     * @param array  $parameters
-     * @param null   $locale
-     *
-     * @return array|null|string
-     */
-    public function trans($key, array $parameters = [], $locale = null)
-    {
-        return $this->app->make('translator')
-            ->trans($this->module()->getName() . '::' . $key, $parameters, $locale);
-    }
-
-    /**
-     * @param string $view
-     * @param array  $data
-     *
-     * @return View
-     */
-    protected function view($view, array $data = [])
-    {
-        return $this->app->make('view')->make($this->viewName($view), $data, []);
-    }
-
-    /**
-     * Get module view name.
-     *
-     * @param string $view
-     *
-     * @return string
-     */
-    protected function viewName($view)
-    {
-        return $this->module()->getName() . '::' . $view;
-    }
 }
