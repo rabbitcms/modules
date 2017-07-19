@@ -2,9 +2,9 @@
 declare(strict_types=1);
 namespace RabbitCMS\Modules;
 
-use Illuminate\Config\Repository as ConfigRepository;
 use Illuminate\Foundation\Application;
 use Illuminate\Routing\Controller as BaseController;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
 use RabbitCMS\Modules\Support\ModuleConcerns;
 
@@ -16,15 +16,6 @@ use RabbitCMS\Modules\Support\ModuleConcerns;
 abstract class ModuleController extends BaseController
 {
     use ModuleConcerns;
-    /**
-     * @var Application $app
-     */
-    protected $app;
-
-    /**
-     * @var ConfigRepository
-     */
-    protected $config;
 
     /**
      * Page cache in seconds.
@@ -34,6 +25,11 @@ abstract class ModuleController extends BaseController
     protected $cache = 0;
 
     /**
+     * @var Application
+     */
+    protected $app;
+
+    /**
      * ModuleController constructor.
      *
      * @param Application $app
@@ -41,7 +37,7 @@ abstract class ModuleController extends BaseController
     public function __construct(Application $app)
     {
         $this->app = $app;
-        $this->config = $app->make('config');
+
         if (method_exists($this, 'init')) {
             $this->app->call([$this, 'init']);
         }
@@ -64,7 +60,7 @@ abstract class ModuleController extends BaseController
         $response = parent::callAction($method, $parameters);
 
         if ($this->cache > 0) {
-            $response = Route::prepareResponse($this->app->make('request'), $response);
+            $response = Route::prepareResponse(App::make('request'), $response);
             $response->headers->addCacheControlDirective('public');
             $response->headers->addCacheControlDirective('max-age', (int)$this->cache);
         }
