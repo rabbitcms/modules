@@ -8,6 +8,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use RabbitCMS\Modules\Contracts\PackageContract;
 use RabbitCMS\Modules\Contracts\PackagesManager;
+use RabbitCMS\Modules\Exceptions\ModuleNotFoundException;
 use RabbitCMS\Modules\Module;
 use RuntimeException;
 
@@ -168,5 +169,37 @@ class Modules implements PackagesManager
                 }
             });
         });
+    }
+
+    protected $namespaces = null;
+    protected $detect = [];
+
+    /**
+     * @param string $class
+     *
+     * @return Module
+     * @throws ModuleNotFoundException
+     */
+    public function detect(string $class): Module
+    {
+        if (array_key_exists($class, $this->detect)) {
+            return $this->get($this->detect[$class]);
+        }
+
+        if ($this->namespaces === null) {
+            $this->namespaces = $this->all()->map(function (Module $module) {
+                return $module->getNamespace();
+            });
+            arsort($this->namespaces);
+        }
+
+        foreach ($this->namespaces as $name => $namespace) {
+            if (strpos($class, $namespace) === 0) {
+                $this->detect[$class] = $name;
+
+                return $this->get($name);
+            }
+        }
+        throw new ModuleNotFoundException("Module for class '$class' not found.");
     }
 }
