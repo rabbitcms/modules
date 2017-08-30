@@ -43,7 +43,7 @@ class DisableCommand extends Command
         $this->modules = $modules;
     }
 
-    public function fire()
+    public function handle()
     {
         $this->modules->disable($this->input->getArgument('name'));
         $this->showModules($this->modules->all());

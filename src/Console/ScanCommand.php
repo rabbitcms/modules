@@ -48,7 +48,7 @@ class ScanCommand extends Command
      *
      * @return void
      */
-    public function fire()
+    public function handle()
     {
         $this->modules->scan(!$this->option('pretend'));
         $this->showModules($this->modules->all());

@@ -43,7 +43,7 @@ class ListCommand extends Command
         $this->modules = $modules;
     }
 
-    public function fire()
+    public function fihandlere()
     {
         $this->showModules($this->modules->all());
     }
