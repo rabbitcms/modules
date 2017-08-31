@@ -43,7 +43,7 @@ class ListCommand extends Command
         $this->modules = $modules;
     }
 
-    public function fihandlere()
+    public function handle()
     {
         $this->showModules($this->modules->all());
     }
