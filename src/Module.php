@@ -2,7 +2,11 @@
 declare(strict_types = 1);
 namespace RabbitCMS\Modules;
 
+use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\Config;
 use RabbitCMS\Modules\Contracts\PackageContract;
+use RabbitCMS\Modules\Support\Facade\Modules;
+use Illuminate\Support\Facades\View as ViewFacade;
 
 /**
  * Class Module.
@@ -174,6 +178,51 @@ class Module implements PackageContract
      */
     public function config(string $key, $default = null)
     {
-        return app('config')->get("module.{$this->getName()}.{$key}", $default);
+        return Config::get("module.{$this->name}.{$key}", $default);
+    }
+
+    /**
+     * @param string $path
+     *
+     * @return string
+     */
+    public function asset($path)
+    {
+        return Modules::asset($this->name, $path);
+    }
+
+    /**
+     * @param string $key
+     * @param array  $parameters
+     * @param null   $locale
+     *
+     * @return array|null|string
+     */
+    public function trans($key, array $parameters = [], $locale = null)
+    {
+        return trans("{$this->name}::{$key}", $parameters, $locale);
+    }
+
+    /**
+     * @param string $view
+     * @param array  $data
+     *
+     * @return View
+     */
+    protected function view($view, array $data = []):View
+    {
+        return ViewFacade::make($this->viewName($view), $data, []);
+    }
+
+    /**
+     * Get module view name.
+     *
+     * @param string $view
+     *
+     * @return string
+     */
+    protected function viewName($view):string
+    {
+        return "{$this->name}::{$view}";
     }
 }
