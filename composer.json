@@ -1,36 +1,39 @@
 {
-  "name": "rabbitcms/modules",
-  "description": "Modules support for Laravel 5.4+",
-  "keywords": [
-    "modules",
-    "laravel",
-    "module",
-    "rabbitcms"
-  ],
-  "require": {
-    "php": ">=7.0.9",
-    "laravel/framework": "5.4.* | 5.5.*"
-  },
-  "license": "MIT",
-  "authors": [
-    {
-      "name": "Kulyk Dmytro",
-      "email": "lnkvisitor.ts@gmail.com"
-    }
-  ],
-  "autoload": {
-    "psr-4": {
-      "RabbitCMS\\Modules\\": "src/"
+    "name": "rabbitcms/modules",
+    "description": "Modules support for Laravel 5.4+",
+    "keywords": [
+        "modules",
+        "laravel",
+        "module",
+        "rabbitcms"
+    ],
+    "require": {
+        "php": ">=7.1.4",
+        "laravel/framework": "^5.4.0"
     },
-    "files": [
-      "src/Support/helpers.php"
-    ]
-  },
-  "extra": {
-    "laravel": {
-      "providers": [
-        "RabbitCMS\\Modules\\Providers\\ModulesServiceProvider"
-      ]
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Kulyk Dmytro",
+            "email": "lnkvisitor.ts@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "RabbitCMS\\Modules\\": "src/"
+        },
+        "files": [
+            "src/Support/helpers.php"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "RabbitCMS\\Modules\\ModulesServiceProvider"
+            ],
+            "aliases": {
+                "Modules": "RabbitCMS\\Modules\\Facades\\Modules"
+            }
+        }
     }
-  }
 }

@@ -3,7 +3,7 @@ declare(strict_types = 1);
 namespace RabbitCMS\Modules\Console;
 
 use Illuminate\Console\Command;
-use RabbitCMS\Modules\Managers\Modules;
+use RabbitCMS\Modules\Facades\Modules;
 
 /**
  * Class ListCommand.
@@ -27,24 +27,8 @@ class ListCommand extends Command
      */
     protected $description = 'List available modules.';
 
-    /**
-     * @var Modules
-     */
-    protected $modules;
-
-    /**
-     * ScanCommand constructor.
-     *
-     * @param Modules $modules
-     */
-    public function __construct(Modules $modules)
-    {
-        parent::__construct();
-        $this->modules = $modules;
-    }
-
     public function handle()
     {
-        $this->showModules($this->modules->all());
+        $this->showModules(Modules::all());
     }
 }

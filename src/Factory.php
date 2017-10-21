@@ -1,0 +1,286 @@
+<?php
+declare(strict_types=1);
+
+namespace RabbitCMS\Modules;
+
+use Illuminate\Foundation\Application;
+use Illuminate\Routing\Router;
+use Illuminate\Support\Str;
+use RabbitCMS\Modules\Exceptions\ModuleNotFoundException;
+
+/**
+ * Class Factory
+ *
+ * @package RabbitCMS\Backend
+ */
+class Factory
+{
+    /**
+     * @var Application
+     */
+    private $app;
+
+    /**
+     * @var Module[]
+     */
+    private $modules = [];
+
+    /**
+     * @var array
+     */
+    private $namespaces = [];
+
+    /**
+     * @var array
+     */
+    private $paths = [];
+
+    /**
+     * @var array
+     */
+    private $foundNamespaces = [];
+
+    /**
+     * @var array
+     */
+    private $foundPaths = [];
+
+    /**
+     * @var callable|null
+     */
+    private $assetResolver;
+
+    /**
+     * @var string[]
+     */
+    private $disabled = [];
+
+    /**
+     * Factory constructor.
+     *
+     * @param Application $app
+     * @param bool        $load
+     */
+    public function __construct(Application $app, bool $load = true)
+    {
+        $this->app = $app;
+        if (is_file($path = $this->getDisabledModulesPath())) {
+            $this->disabled = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        }
+        if ($load && is_file($this->getCachedModulesPath())) {
+            /** @noinspection PhpIncludeInspection */
+            [
+                'modules' => $this->modules,
+                'namespaces' => $this->namespaces,
+                'paths' => $this->paths
+            ] = require $this->getCachedModulesPath();
+
+            array_walk($this->modules, function (Module $module) {
+                $module->setEnabled(
+                    !in_array($module->getName(), $this->disabled, true) && is_file($module->getPath('composer.json'))
+                );
+            });
+
+        }
+    }
+
+    /**
+     * Load modules routes.
+     *
+     * @param string $scope
+     */
+    public function loadRoutes(string $scope = 'web'): void
+    {
+        $this->app->make('router')->group([
+            'as' => $scope === 'web' ? '' : "{$scope}."
+        ], function (Router $router) use ($scope) {
+            array_map(function (Module $module) use ($scope, $router) {
+                if (file_exists($path = $module->getPath("routes/{$scope}.php"))) {
+                    $router->group([
+                        'namespace' => $module->getNamespace() . '\\Http\\Controllers'
+                    ], function (Router $router) use ($module, $path, $scope) {
+                        $options = array_merge([
+                            'namespace' => $scope === 'web' ? null : Str::studly($scope),
+                            'as' => $module->getName() . '.',
+                            'prefix' => $module->getName(),
+                            'middleware' => $scope
+                        ], $module->config("routes.{$scope}", []));
+                        $router->group($options, function (
+                            /** @noinspection PhpUnusedParameterInspection */
+                            Router $router
+                        ) use ($path, $module) {
+                            /** @noinspection PhpIncludeInspection */
+                            require($path);
+                        });
+                    });
+                }
+            }, $this->enabled());
+        });
+    }
+
+    /**
+     * Get modules assets root path.
+     *
+     * @return string
+     */
+    public function getAssetsRoot(): string
+    {
+        return $this->app->make('config')->get('modules.assets', 'modules');
+    }
+
+    /**
+     * @param string $name
+     *
+     * @return Module
+     * @throws ModuleNotFoundException
+     */
+    public function getByName(string $name): Module
+    {
+        if (array_key_exists($name, $this->modules)) {
+            return $this->modules[$name];
+        }
+        throw new ModuleNotFoundException("Module '$name' not found.");
+    }
+
+    /**
+     * @param string $namespace
+     *
+     * @return Module
+     * @throws ModuleNotFoundException
+     */
+    public function getByNamespace(string $namespace): Module
+    {
+        if (array_key_exists($namespace, $this->foundNamespaces)) {
+            return $this->foundNamespaces[$namespace];
+        }
+
+        foreach ($this->namespaces as $name => $ns) {
+            if (strpos($namespace, $ns) === 0) {
+                return $this->foundNamespaces[$ns] = $this->getByName($name);
+            }
+        }
+        throw new ModuleNotFoundException("Module for namespace '$namespace' not found.");
+
+    }
+
+    /**
+     * @param string $path
+     *
+     * @return Module
+     * @throws ModuleNotFoundException
+     */
+    public function getByPath(string $path): Module
+    {
+        if (array_key_exists($path, $this->foundPaths)) {
+            return $this->foundPaths[$path];
+        }
+
+        foreach ($this->paths as $name => $ns) {
+            if (strpos($path, $ns) === 0) {
+                return $this->foundPaths[$ns] = $this->getByName($name);
+            }
+        }
+        throw new ModuleNotFoundException("Module for path '$path' not found.");
+    }
+
+    /**
+     * @param callable $resolver
+     */
+    public function setAssetResolver(callable $resolver = null)
+    {
+        $this->assetResolver = $resolver;
+    }
+
+    /**
+     * Get module asset.
+     *
+     * @param string|Module $module
+     * @param string        $path
+     * @param bool|null     $secure
+     *
+     * @return string
+     * @throws ModuleNotFoundException
+     */
+    public function asset($module, string $path, bool $secure = null): string
+    {
+        if (!($module instanceof Module)) {
+            $module = $this->getByName($module);
+        }
+
+        if ($this->assetResolver && ($url = call_user_func($this->assetResolver, $module, $path, $secure)) !== null) {
+            return $url;
+        }
+
+        return $this->app->make('url')->asset($this->getAssetsRoot() . "/{$module}/" . $path, $secure);
+    }
+
+    /**
+     * Get the path to the cached modules.php file.
+     *
+     * @return string
+     */
+    public function getCachedModulesPath(): string
+    {
+        return $this->app->bootstrapPath() . '/cache/modules.php';
+    }
+
+    /**
+     * Get the path to the cached modules.php file.
+     *
+     * @return string
+     */
+    public function getDisabledModulesPath(): string
+    {
+        return $this->app->storagePath() . '/modules.disabled';
+    }
+
+    /**
+     * Get all modules.
+     *
+     * @return array
+     */
+    public function all(): array
+    {
+        return $this->modules;
+    }
+
+    /**
+     * Get enabled modules.
+     *
+     * @return array
+     */
+    public function enabled(): array
+    {
+        return array_filter($this->all(), function (Module $module) {
+            return $module->isEnabled();
+        });
+    }
+
+    /**
+     * Enable or disable the module.
+     *
+     * @param string|Module $module
+     * @param bool          $enabled
+     *
+     * @throws ModuleNotFoundException
+     */
+    public function enable($module, bool $enabled = true): void
+    {
+        if (!($module instanceof Module)) {
+            $module = $this->getByName($module);
+        }
+
+        $module->setEnabled($enabled);
+
+        if ($enabled) {
+            $this->disabled = array_filter($this->disabled, function ($name) use ($module) {
+                return $name !== $module->getName();
+            });
+        } else {
+            $this->disabled[] = $module->getName();
+            $this->disabled = array_unique($this->disabled);
+        }
+
+        file_put_contents($this->getDisabledModulesPath(), implode(PHP_EOL, $this->disabled));
+    }
+}

@@ -3,7 +3,7 @@ declare(strict_types=1);
 namespace RabbitCMS\Modules\Console;
 
 use Illuminate\Console\Command;
-use RabbitCMS\Modules\Managers\Modules;
+use RabbitCMS\Modules\Facades\Modules;
 
 /**
  * Class DisableCommand
@@ -27,25 +27,9 @@ class DisableCommand extends Command
      */
     protected $description = 'Disable the module.';
 
-    /**
-     * @var Modules
-     */
-    protected $modules;
-
-    /**
-     * ScanCommand constructor.
-     *
-     * @param Modules $modules
-     */
-    public function __construct(Modules $modules)
-    {
-        parent::__construct();
-        $this->modules = $modules;
-    }
-
     public function handle()
     {
-        $this->modules->disable($this->input->getArgument('name'));
-        $this->showModules($this->modules->all());
+        Modules::enable($this->input->getArgument('name'), false);
+        $this->showModules(Modules::all());
     }
 }

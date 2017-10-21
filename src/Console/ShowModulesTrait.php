@@ -3,9 +3,7 @@ declare(strict_types = 1);
 namespace RabbitCMS\Modules\Console;
 
 use Illuminate\Console\Command;
-use RabbitCMS\Modules\Contracts\PackageContract;
 use RabbitCMS\Modules\Module;
-use RabbitCMS\Modules\Repository;
 
 /**
  * Class ShowModulesTrait.
@@ -15,21 +13,21 @@ use RabbitCMS\Modules\Repository;
 trait ShowModulesTrait
 {
     /**
-     * @param Repository $modules
+     * @param Module[] $modules
      */
-    protected function showModules(Repository $modules)
+    protected function showModules(array $modules)
     {
+        $regex = '#^' . preg_quote(base_path(), '#') . '#';
         $this->table(
-            ['Name', 'Namespace', 'Path', 'Enabled', 'Description'],
-            $modules->map(function (PackageContract $module) {
+            ['Name', 'Namespace', 'Path', 'Enabled'],
+            array_map(function (Module $module) use ($regex) {
                 return [
                     $module->getName(),
-                    $module instanceof Module ? $module->getNamespace() : '',
-                    preg_replace('/^' . preg_quote(base_path() . '/', '/') . '/', '', $module->getPath()),
-                    $module->isSystem() ? 'System' : ($module->isEnabled() ? 'Enabled' : 'Disabled'),
-                    $module->getDescription(),
+                    $module->getNamespace(),
+                    preg_replace($regex, '{$root}', $module->getPath()),
+                    $module->isEnabled() ? 'Enabled' : 'Disabled',
                 ];
-            })
+            }, $modules)
         );
     }
 }

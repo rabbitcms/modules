@@ -3,7 +3,7 @@ declare(strict_types=1);
 namespace RabbitCMS\Modules\Console;
 
 use Illuminate\Console\Command;
-use RabbitCMS\Modules\Managers\Modules;
+use RabbitCMS\Modules\Facades\Modules;
 
 /**
  * Class EnableCommand.
@@ -26,25 +26,9 @@ class EnableCommand extends Command
      */
     protected $description = 'Enable the module.';
 
-    /**
-     * @var Modules
-     */
-    protected $modules;
-
-    /**
-     * ScanCommand constructor.
-     *
-     * @param Modules $modules
-     */
-    public function __construct(Modules $modules)
-    {
-        parent::__construct();
-        $this->modules = $modules;
-    }
-
     public function handle()
     {
-        $this->modules->enable($this->input->getArgument('name'));
-        $this->showModules($this->modules->all());
+        Modules::enable($this->input->getArgument('name'));
+        $this->showModules(Modules::all());
     }
 }

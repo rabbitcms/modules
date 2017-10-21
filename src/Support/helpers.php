@@ -1,35 +1,23 @@
 <?php
 declare(strict_types = 1);
 
-use RabbitCMS\Modules\Support\Facade\Modules;
-
-if (!function_exists('asset_module')) {
-    /**
-     * Get assett for module
-     * @deprecated
-     * @param string $asset
-     * @param string $module [optional]
-     *
-     * @return string
-     */
-    function asset_module($asset, $module = '')
-    {
-        return Modules::asset($module, $asset);
-    }
-}
+use RabbitCMS\Modules\Facades\Modules;
+use RabbitCMS\Modules\Module;
 
 if (!function_exists('module_asset')) {
     /**
      * Get asset for module
      *
-     * @param string $module
-     * @param string $asset
+     * @param string|Module    $module
+     * @param string    $asset
+     *
+     * @param bool|null $secure
      *
      * @return string
      */
-    function module_asset(string $module, string $asset): string
+    function module_asset($module, string $asset, ?bool $secure = null): string
     {
-        return Modules::asset($module, $asset);
+        return Modules::asset($module, $asset, $secure);
     }
 }
 
@@ -44,6 +32,6 @@ if (!function_exists('module_path')) {
      */
     function module_path(string $module, string $path = ''): string
     {
-        return Modules::get($module)->getPath($path);
+        return Modules::getByName($module)->getPath($path);
     }
 }
