@@ -176,7 +176,7 @@ class Module
      *
      * @return ViewContract
      */
-    protected function view(string $view, array $data = []): ViewContract
+    public function view(string $view, array $data = []): ViewContract
     {
         return ViewFacade::make($this->viewName($view), $data, []);
     }
@@ -188,7 +188,7 @@ class Module
      *
      * @return string
      */
-    protected function viewName($view): string
+    public function viewName($view): string
     {
         return $this->getName() . '::' . $view;
     }

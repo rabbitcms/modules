@@ -20,12 +20,11 @@ trait BelongsToModule
      * @param string|null $class
      *
      * @return Module
-     * @throws ModuleNotFoundException
      */
     public static function module(string $class = null): Module
     {
         static $modules = [];
-        $class = $class ?? get_class(static::class);
+        $class = $class ?? static::class;
         return $modules[$class] ?? $modules[$class] = Modules::getByNamespace($class);
     }
 }
