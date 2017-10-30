@@ -5,6 +5,7 @@ namespace RabbitCMS\Modules\Facades;
 
 use Illuminate\Support\Facades\Facade;
 use RabbitCMS\Modules\Module;
+use RabbitCMS\Modules\Theme;
 
 /**
  * Class Modules
@@ -13,11 +14,15 @@ use RabbitCMS\Modules\Module;
  * @method static Module getByName(string $name)
  * @method static Module getByNamespace(string $namespace)
  * @method static Module getByPath(string $path)
+ * @method static Theme getThemeByName(string $name)
+ * @method static ?string getCurrentTheme()
  * @method static Module[] all()
  * @method static Module[] enabled()
  * @method static void loadRoutes(string $scope = 'web')
  * @method static string asset(string|Module $module, string $path, ?bool $secure = null)
  * @method static void enable(string|Module $module, bool $enabled = true)
+ * @method static string getModulesAssetsRoot()
+ * @method static string getThemesAssetsRoot()
  */
 class Modules extends Facade
 {

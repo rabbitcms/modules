@@ -26,6 +26,11 @@ class Factory
     private $modules = [];
 
     /**
+     * @var Theme[]
+     */
+    private $themes = [];
+
+    /**
      * @var array
      */
     private $namespaces = [];
@@ -44,11 +49,6 @@ class Factory
      * @var array
      */
     private $foundPaths = [];
-
-    /**
-     * @var callable|null
-     */
-    private $assetResolver;
 
     /**
      * @var string[]
@@ -71,16 +71,21 @@ class Factory
             /** @noinspection PhpIncludeInspection */
             [
                 'modules' => $this->modules,
+                'themes' => $this->themes,
                 'namespaces' => $this->namespaces,
                 'paths' => $this->paths
-            ] = require $this->getCachedModulesPath();
+            ] = (require $this->getCachedModulesPath()) + [
+                'themes' => [],
+                'modules' => [],
+                'paths' => [],
+                'namespaces' => []
+            ];
 
             array_walk($this->modules, function (Module $module) {
                 $module->setEnabled(
                     !in_array($module->getName(), $this->disabled, true) && is_file($module->getPath('composer.json'))
                 );
             });
-
         }
     }
 
@@ -91,29 +96,34 @@ class Factory
      */
     public function loadRoutes(string $scope = 'web'): void
     {
+        if ($this->app->routesAreCached()) {
+            return;
+        }
+
         $this->app->make('router')->group([
             'as' => $scope === 'web' ? '' : "{$scope}."
         ], function (Router $router) use ($scope) {
             array_map(function (Module $module) use ($scope, $router) {
-                if (file_exists($path = $module->getPath("routes/{$scope}.php"))) {
-                    $router->group([
-                        'namespace' => $module->getNamespace() . '\\Http\\Controllers'
-                    ], function (Router $router) use ($module, $path, $scope) {
-                        $options = array_merge([
-                            'namespace' => $scope === 'web' ? null : Str::studly($scope),
-                            'as' => $module->getName() . '.',
-                            'prefix' => $module->getName(),
-                            'middleware' => $scope
-                        ], $module->config("routes.{$scope}", []));
-                        $router->group($options, function (
-                            /** @noinspection PhpUnusedParameterInspection */
-                            Router $router
-                        ) use ($path, $module) {
-                            /** @noinspection PhpIncludeInspection */
-                            require($path);
-                        });
-                    });
+                if (!file_exists($path = $module->getPath("routes/{$scope}.php"))) {
+                    return;
                 }
+                $router->group([
+                    'namespace' => $module->getNamespace() . '\\Http\\Controllers'
+                ], function (Router $router) use ($module, $path, $scope) {
+                    $options = array_merge([
+                        'namespace' => $scope === 'web' ? null : Str::studly($scope),
+                        'as' => $module->getName() . '.',
+                        'prefix' => $module->getName(),
+                        'middleware' => $scope
+                    ], $module->config("routes.{$scope}", []));
+                    $router->group($options, function (
+                        /** @noinspection PhpUnusedParameterInspection */
+                        Router $router
+                    ) use ($path, $module) {
+                        /** @noinspection PhpIncludeInspection */
+                        require $path;
+                    });
+                });
             }, $this->enabled());
         });
     }
@@ -123,9 +133,27 @@ class Factory
      *
      * @return string
      */
-    public function getAssetsRoot(): string
+    public function getModulesAssetsRoot(): string
     {
-        return $this->app->make('config')->get('modules.assets', 'modules');
+        return $this->app->make('config')->get('modules.modules_assets', 'modules');
+    }
+
+    /**
+     * Get themes assets root path.
+     *
+     * @return string
+     */
+    public function getThemesAssetsRoot(): string
+    {
+        return $this->app->make('config')->get('modules.themes_assets', 'modules');
+    }
+
+    /**
+     * @return null|string
+     */
+    public function getCurrentTheme(): ?string
+    {
+        return $this->app->make('config')->get('modules.theme');
     }
 
     /**
@@ -139,7 +167,7 @@ class Factory
         if (array_key_exists($name, $this->modules)) {
             return $this->modules[$name];
         }
-        throw new ModuleNotFoundException("Module '$name' not found.");
+        throw new ModuleNotFoundException("Module '{$name}' not found.");
     }
 
     /**
@@ -159,7 +187,7 @@ class Factory
                 return $this->foundNamespaces[$ns] = $this->getByName($name);
             }
         }
-        throw new ModuleNotFoundException("Module for namespace '$namespace' not found.");
+        throw new ModuleNotFoundException("Module for namespace '{$namespace}' not found.");
 
     }
 
@@ -180,15 +208,23 @@ class Factory
                 return $this->foundPaths[$ns] = $this->getByName($name);
             }
         }
-        throw new ModuleNotFoundException("Module for path '$path' not found.");
+        throw new ModuleNotFoundException("Module for path '{$path}' not found.");
     }
 
     /**
-     * @param callable $resolver
+     * Get theme by name.
+     *
+     * @param string $name
+     *
+     * @return Theme
+     * @throws ModuleNotFoundException
      */
-    public function setAssetResolver(callable $resolver = null)
+    public function getThemeByName(string $name): Theme
     {
-        $this->assetResolver = $resolver;
+        if (array_key_exists($name, $this->themes)) {
+            return $this->themes[$name];
+        }
+        throw new ModuleNotFoundException("Theme '{$name}' not found.");
     }
 
     /**
@@ -207,11 +243,18 @@ class Factory
             $module = $this->getByName($module);
         }
 
-        if ($this->assetResolver && ($url = call_user_func($this->assetResolver, $module, $path, $secure)) !== null) {
-            return $url;
+        $themeName = $this->getCurrentTheme();
+        while ($themeName !== null) {
+            $theme = $this->getThemeByName($themeName);
+            if ($theme->getPath("assets/{$module->getName()}/{$path}")) {
+                return $this->app->make('url')
+                    ->asset("{$this->getThemesAssetsRoot()}/{$theme->getName()}/{$module->getName()}/{$path}", $secure);
+            }
+
+            $themeName = $theme->getExtends();
         }
 
-        return $this->app->make('url')->asset($this->getAssetsRoot() . "/{$module}/" . $path, $secure);
+        return $this->app->make('url')->asset("{$this->getModulesAssetsRoot()}/{$module->getName()}/{$path}", $secure);
     }
 
     /**

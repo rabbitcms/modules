@@ -11,6 +11,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Console\Kernel;
 use RabbitCMS\Modules\Factory;
 use RabbitCMS\Modules\Module;
+use RabbitCMS\Modules\Theme;
 
 /**
  * Class PostAutoloadDump
@@ -32,25 +33,34 @@ class PostAutoloadDump
     /**
      * @var Factory
      */
-    private $modules;
+    private $factory;
+
+    /**
+     * @var array|Module[]
+     */
+    private $modules = [];
+
+    /**
+     * @var array|Theme[]
+     */
+    private $themes = [];
 
     /**
      * @var array
      */
-    private $newModules = [];
-
     private $namespaces = [];
 
+    /**
+     * @var array
+     */
     private $paths = [];
 
     /**
      * Handle the post-autoload-dump Composer event.
      *
-     * @param  \Composer\Script\Event $event
-     *
-     * @return void
+     * @param Event $event
      */
-    public static function handle(Event $event)
+    public static function handle(Event $event): void
     {
         $composer = $event->getComposer();
         require_once $composer->getConfig()->get('vendor-dir') . '/autoload.php';
@@ -66,30 +76,30 @@ class PostAutoloadDump
     {
         $this->composer = $composer;
         $this->application = new Application(getcwd());
-        $this->modules = new Factory($this->application, false);
-        $this->application->instance('modules', $this->modules);
+        $this->factory = new Factory($this->application, false);
+        $this->application->instance('modules', $this->factory);
         $this->application->make(Kernel::class)->bootstrap();
 
         $this->clearCompiled();
 
-        $publicPath = $this->application->publicPath() . '/' . $this->modules->getAssetsRoot();
+        $publicPath = $this->application->publicPath() . '/' . $this->factory->getModulesAssetsRoot();
         if (!is_dir($publicPath)) {
             mkdir($publicPath, 0777, true);
         }
 
         $this->discoverPackages();
 
-
         arsort($this->namespaces);
         arsort($this->paths);
 
         file_put_contents(
-            $this->modules->getCachedModulesPath(),
+            $this->factory->getCachedModulesPath(),
             '<?php return unserialize(' . var_export(serialize([
-                'modules' => $this->newModules,
+                'modules' => $this->modules,
+                'themes' => $this->themes,
                 'namespaces' => $this->namespaces,
                 'paths' => $this->paths
-            ]), true) . ");\n"
+            ]), true) . ", ['allowed_classes' => " . var_export([Theme::class, Module::class], true) . "]);\n"
         );
     }
 
@@ -109,6 +119,10 @@ class PostAutoloadDump
         if (array_key_exists('module', $package->getExtra())) {
             $this->addModule($package);
         }
+
+        if (array_key_exists('theme', $package->getExtra())) {
+            $this->addTheme($package);
+        }
     }
 
     /**
@@ -125,7 +139,7 @@ class PostAutoloadDump
         if (strpos($path, DIRECTORY_SEPARATOR) !== 0) {
             $path = realpath($this->application->basePath($path));
         }
-        $this->newModules[$name] = $module = new Module([
+        $this->modules[$name] = $module = new Module([
             'name' => $name,
             'namespace' => $namespace,
             'path' => $path,
@@ -138,10 +152,38 @@ class PostAutoloadDump
         if (is_dir($public = $module->getPath('public'))) {
             $this->updateLink(
                 $public,
-                $this->application->publicPath() . '/' . $this->modules->getAssetsRoot() . '/' . $module->getName()
+                "{$this->application->publicPath()}/{$this->factory->getModulesAssetsRoot()}/{$module->getName()}"
             );
         }
         echo 'Discovered Module: ', $name, PHP_EOL;
+    }
+
+    /**
+     * @param PackageInterface $package
+     */
+    protected function addTheme(PackageInterface $package): void
+    {
+        $extra = $package->getExtra()['theme'];
+        $name = $extra['name'] ?? explode('/', $package->getName())[1];
+        $path = $package instanceof RootPackageInterface
+            ? $this->application->basePath()
+            : $this->composer->getInstallationManager()->getInstallPath($package);
+        if (strpos($path, DIRECTORY_SEPARATOR) !== 0) {
+            $path = realpath($this->application->basePath($path));
+        }
+        $this->themes[$name] = $theme = new Theme([
+            'name' => $name,
+            'path' => $path,
+            'extends' => $extra['extends'] ?? []
+        ]);
+
+        if (is_dir($public = $theme->getPath('assets'))) {
+            $this->updateLink(
+                $public,
+                "{$this->application->publicPath()}/{$this->factory->getThemesAssetsRoot()}/{$theme->getName()}"
+            );
+        }
+        echo 'Discovered Theme: ', $name, PHP_EOL;
     }
 
     /**
@@ -149,9 +191,9 @@ class PostAutoloadDump
      *
      * @return void
      */
-    protected function clearCompiled()
+    protected function clearCompiled(): void
     {
-        if (file_exists($servicesPath = $this->modules->getCachedModulesPath())) {
+        if (file_exists($servicesPath = $this->factory->getCachedModulesPath())) {
             @unlink($servicesPath);
         }
     }
@@ -160,7 +202,7 @@ class PostAutoloadDump
      * @param string $link
      * @param string $path
      */
-    protected function updateLink(string $link, string $path)
+    protected function updateLink(string $link, string $path): void
     {
         is_link($path) && unlink($path);
         if (is_dir($link) && $link !== $this->application->publicPath()) {

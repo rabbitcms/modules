@@ -1,5 +1,7 @@
 <?php
 declare(strict_types=1);
 return [
-    'assets' => 'modules',
+    'modules_assets' => 'modules',
+    'themes_assets' => 'themes',
+    'theme' => env('THEME'),
 ];
