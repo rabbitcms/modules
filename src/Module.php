@@ -1,8 +1,12 @@
 <?php
-declare(strict_types = 1);
+declare(strict_types=1);
+
 namespace RabbitCMS\Modules;
 
 use RabbitCMS\Modules\Contracts\PackageContract;
+use RabbitCMS\Modules\Support\Facade\Modules;
+use Illuminate\Contracts\View\View as ViewContract;
+use Illuminate\Support\Facades\View as ViewFacade;
 
 /**
  * Class Module.
@@ -133,7 +137,7 @@ class Module implements PackageContract
      *
      * @return string[]
      */
-    public function getProviders()
+    public function getProviders(): array
     {
         return $this->providers;
     }
@@ -141,16 +145,16 @@ class Module implements PackageContract
     /**
      * @inheritdoc
      */
-    public function toArray()
+    public function toArray(): array
     {
         return [
-            'path' => $this->path,
-            'name' => $this->name,
+            'path'        => $this->path,
+            'name'        => $this->name,
             'description' => $this->description,
-            'namespace' => $this->namespace,
-            'enabled' => $this->enabled,
-            'providers' => $this->providers,
-            'system' => $this->system,
+            'namespace'   => $this->namespace,
+            'enabled'     => $this->enabled,
+            'providers'   => $this->providers,
+            'system'      => $this->system,
         ];
     }
 
@@ -159,7 +163,7 @@ class Module implements PackageContract
      *
      * @return string
      */
-    public function getDescription():string
+    public function getDescription(): string
     {
         return $this->description;
     }
@@ -168,12 +172,58 @@ class Module implements PackageContract
      * Get the specified configuration value.
      *
      * @param  string $key
-     * @param  mixed $default
+     * @param  mixed  $default
      *
      * @return mixed
      */
     public function config(string $key, $default = null)
     {
         return app('config')->get("module.{$this->getName()}.{$key}", $default);
+    }
+
+    /**
+     * @param string    $path
+     * @param bool|null $secure
+     *
+     * @return string
+     */
+    public function asset(string $path, ?bool $secure = null): string
+    {
+        return Modules::asset($this, $path, $secure);
+    }
+
+    /**
+     * @param string $key
+     * @param array  $parameters
+     * @param null   $locale
+     *
+     * @return array|null|string
+     */
+    public function trans(string $key, array $parameters = [], $locale = null)
+    {
+        return trans($this->getName() . '::' . $key, $parameters, $locale);
+    }
+
+    /**
+     * @param string $view
+     * @param array  $data
+     *
+     * @return ViewContract
+     */
+    public function view(string $view, array $data = []): ViewContract
+    {
+        return ViewFacade::make($this->viewName($view), $data, []);
+    }
+
+    /**
+     * Get module view name.
+     *
+     * @param string $view
+     *
+     * @return string
+     */
+    public function viewName($view): string
+    {
+        return $this->getName() . '::' . $view;
     }
 }
