@@ -100,11 +100,11 @@ class ModulesServiceProvider extends ServiceProvider
      */
     protected function registerConfig()
     {
-        $path = realpath(__DIR__ . '/../config/config.php');
+        $path = dirname(__DIR__) . '/config/config.php';
 
-        $this->mergeConfigFrom($path, "modules");
+        $this->mergeConfigFrom($path, 'modules');
 
-        $this->publishes([$path => config_path('modules.php')]);
+        $this->publishes([$path => config_path('modules.php')], 'config');
     }
 
     public function registerCommands()
@@ -135,7 +135,11 @@ class ModulesServiceProvider extends ServiceProvider
     {
         $this->app->beforeBootstrapping(BootProviders::class, function (Application $app) {
             $aliases = [];
-            array_map(function (Module $module) use ($app, &$aliases) {
+            $theme = Modules::getCurrentTheme();
+            if ($theme !== null) {
+                $theme = Modules::getThemeByName($theme);
+            }
+            array_map(function (Module $module) use ($app, &$aliases, $theme) {
                 $aliases += $module->getAliases();
                 //Merge module config.
                 if (is_file($path = $module->getPath('config/config.php'))) {
@@ -143,12 +147,18 @@ class ModulesServiceProvider extends ServiceProvider
                 }
 
                 //Load module translation.
-                if(is_dir($path = $module->getPath('resources/lang'))) {
+                if (is_dir($path = $module->getPath('resources/lang'))) {
                     $path2 = base_path("resources/lang/modules/{$module->getName()}");
                     $this->loadTranslationsFrom(is_dir($path2) ? $path2 : $path, $module->getName());
                 }
 
-                if(is_dir($path = $module->getPath('resources/views'))) {
+                if ($theme !== null) {
+                    if (is_dir($path = $theme->getPath("views/{$module->getName()}"))) {
+                        $this->loadViewsFrom($path, $module->getName());
+                    }
+                }
+
+                if (is_dir($path = $module->getPath('resources/views'))) {
                     $this->loadViewsFrom($path, $module->getName());
                 }
 
