@@ -174,7 +174,7 @@ class PostAutoloadDump
         $this->themes[$name] = $theme = new Theme([
             'name' => $name,
             'path' => $path,
-            'extends' => $extra['extends'] ?? []
+            'extends' => $extra['extends'] ?? null
         ]);
 
         if (is_dir($public = $theme->getPath('assets'))) {

@@ -246,7 +246,7 @@ class Factory
         $themeName = $this->getCurrentTheme();
         while ($themeName !== null) {
             $theme = $this->getThemeByName($themeName);
-            if ($theme->getPath("assets/{$module->getName()}/{$path}")) {
+            if (is_file($theme->getPath("assets/{$module->getName()}/{$path}"))) {
                 return $this->app->make('url')
                     ->asset("{$this->getThemesAssetsRoot()}/{$theme->getName()}/{$module->getName()}/{$path}", $secure);
             }

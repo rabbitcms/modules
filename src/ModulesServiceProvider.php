@@ -3,15 +3,18 @@ declare(strict_types=1);
 
 namespace RabbitCMS\Modules;
 
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Migrations\Migrator;
 use Illuminate\Foundation\AliasLoader;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Bootstrap\BootProviders;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\View\Compilers\BladeCompiler;
 use RabbitCMS\Modules\Console\DisableCommand;
 use RabbitCMS\Modules\Console\EnableCommand;
 use RabbitCMS\Modules\Console\ListCommand;
 use RabbitCMS\Modules\Facades\Modules;
+use Illuminate\View\Factory as ViewFactory;
 
 /**
  * Class ModulesServiceProvider.
@@ -70,25 +73,7 @@ class ModulesServiceProvider extends ServiceProvider
         $this->registerConfig();
 
         $this->registerCommands();
-        //
-        //
-        //        $this->app->afterResolving('view', function (ViewFactory $view) {
-        //            $view->composer('*', function (View $view) {
-        //                $name = explode('::', $view->getName(), 2);
-        //                if (count($name) > 1) {
-        //                    $view->with('module_name', $name[0]);
-        //                }
-        //            });
-        //        });
-        //
-        //        $this->app->afterResolving('blade.compiler', function (BladeCompiler $compiler) {
-        //            $compiler->directive('mlang', function ($expression) {
-        /*                return "<?php echo trans(\$module_name.'::'.{$expression}); ?>";*/
-        //            });
-        //            $compiler->directive('masset', function ($expression) {
-        /*                return "<?php echo module_asset(\$module_name, {$expression}); ?>";*/
-        //            });
-        //        });
+        $this->registerViewsDirectives();
 
         $this->publishConfigs();
         $this->loadMigrations();
@@ -206,6 +191,27 @@ class ModulesServiceProvider extends ServiceProvider
                     $migrator->path($dir);
                 }
             }
+        });
+    }
+
+    protected function registerViewsDirectives(): void
+    {
+        $this->app->afterResolving('view', function (ViewFactory $view) {
+            $view->composer('*', function (View $view) {
+                $name = explode('::', $view->name(), 2);
+                if (count($name) > 1) {
+                    $view->with('module_name', $name[0]);
+                }
+            });
+        });
+
+        $this->app->afterResolving('blade.compiler', function (BladeCompiler $compiler) {
+            $compiler->directive('mlang', function ($expression) {
+                return "<?php echo trans(\$module_name.'::'.{$expression}); ?>";
+            });
+            $compiler->directive('masset', function ($expression) {
+                return "<?php echo module_asset(\$module_name, {$expression}); ?>";
+            });
         });
     }
 }
