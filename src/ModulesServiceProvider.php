@@ -120,11 +120,13 @@ class ModulesServiceProvider extends ServiceProvider
     {
         $this->app->beforeBootstrapping(BootProviders::class, function (Application $app) {
             $aliases = [];
-            $theme = Modules::getCurrentTheme();
-            if ($theme !== null) {
-                $theme = Modules::getThemeByName($theme);
+            $themeName = Modules::getCurrentTheme();
+            $themes = [];
+            while ($themeName !== null) {
+                $themes[] = $theme = Modules::getThemeByName($themeName);
+                $themeName = $theme->getExtends();
             }
-            array_map(function (Module $module) use ($app, &$aliases, $theme) {
+            array_map(function (Module $module) use ($app, &$aliases, $themes) {
                 $aliases += $module->getAliases();
                 //Merge module config.
                 if (is_file($path = $module->getPath('config/config.php'))) {
@@ -137,7 +139,7 @@ class ModulesServiceProvider extends ServiceProvider
                     $this->loadTranslationsFrom(is_dir($path2) ? $path2 : $path, $module->getName());
                 }
 
-                if ($theme !== null) {
+                foreach ($themes as $theme) {
                     if (is_dir($path = $theme->getPath("views/{$module->getName()}"))) {
                         $this->loadViewsFrom($path, $module->getName());
                     }
