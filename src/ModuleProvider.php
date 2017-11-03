@@ -1,17 +1,22 @@
 <?php
-declare(strict_types = 1);
+declare(strict_types=1);
+
 namespace RabbitCMS\Modules;
 
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider as IlluminateServiceProvider;
+use RabbitCMS\Modules\Concerns\BelongsToModule;
 use RabbitCMS\Modules\Managers\Modules;
 
 /**
  * Class ModuleProvider.
+ *
  * @package RabbitCMS\Modules
  */
 abstract class ModuleProvider extends IlluminateServiceProvider
 {
+    use BelongsToModule;
+
     /**
      * @var Module
      */
@@ -19,18 +24,20 @@ abstract class ModuleProvider extends IlluminateServiceProvider
 
     /**
      * @var Modules
+     * @deprecated
      */
     protected $modulesManager;
 
     /**
      * ModuleProvider constructor.
+     *
      * @param Application $app
      */
     public function __construct(Application $app)
     {
         parent::__construct($app);
         $this->modulesManager = $this->app->make(Modules::class);
-        $this->module = $this->modulesManager->get($this->name());
+        $this->module = static::module();
     }
 
     /**
@@ -38,7 +45,10 @@ abstract class ModuleProvider extends IlluminateServiceProvider
      *
      * @return string
      */
-    abstract protected function name(): string;
+    protected function name(): string
+    {
+        return static::module()->getName();
+    }
 
     /**
      * Register the service provider.
@@ -96,15 +106,9 @@ abstract class ModuleProvider extends IlluminateServiceProvider
      */
     protected function registerViews()
     {
-        $base = base_path("resources/views/modules/{$this->module->getName()}");
-
-        $source = $this->module->getPath('resources/views');
-
-        $this->publishes([$source => $base]);
-
-        $paths = [$base, $source];
-
-        $this->loadViewsFrom($paths, $this->module->getName());
+        if (is_dir($source = $this->module->getPath('resources/views'))) {
+            $this->loadViewsFrom($source, $this->module->getName());
+        }
     }
 
     /**
@@ -120,13 +124,15 @@ abstract class ModuleProvider extends IlluminateServiceProvider
     /**
      * Get the specified configuration value.
      *
+     * @deprecated use Module::config()
+     *
      * @param  string $key
-     * @param  mixed $default
+     * @param  mixed  $default
      *
      * @return mixed
      */
-    protected function config($key, $default = null)
+    protected function config(string $key, $default = null)
     {
-        return $this->app->make('config')->get("module.{$this->module->getName()}.$key", $default);
+        return static::module()->config($key, $default);
     }
 }
