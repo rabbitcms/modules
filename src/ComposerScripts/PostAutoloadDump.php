@@ -8,6 +8,8 @@ use Composer\Package\PackageInterface;
 use Composer\Package\RootPackageInterface;
 use Composer\Script\Event;
 use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Bootstrap\LoadConfiguration;
+use Illuminate\Foundation\Bootstrap\LoadEnvironmentVariables;
 use Illuminate\Foundation\Console\Kernel;
 use RabbitCMS\Modules\Factory;
 use RabbitCMS\Modules\Module;
@@ -78,7 +80,12 @@ class PostAutoloadDump
         $this->application = new Application(getcwd());
         $this->factory = new Factory($this->application, false);
         $this->application->instance('modules', $this->factory);
-        $this->application->make(Kernel::class)->bootstrap();
+        $this->application->bootstrapWith([
+            LoadEnvironmentVariables::class,
+            LoadConfiguration::class,
+        ]);
+
+        //$this->application->make(Kernel::class)->bootstrap();
 
         $this->clearCompiled();
 
