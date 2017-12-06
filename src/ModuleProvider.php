@@ -13,7 +13,7 @@ use Illuminate\Support\ServiceProvider;
  */
 class ModuleProvider extends ServiceProvider
 {
-    public function register(): void
+    public function register()
     {
     }
 }
