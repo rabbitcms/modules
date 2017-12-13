@@ -5,8 +5,8 @@ namespace RabbitCMS\Modules;
 
 use Illuminate\Contracts\View\View as ViewContract;
 use Illuminate\Support\Facades\Config;
-use RabbitCMS\Modules\Facades\Modules;
 use Illuminate\Support\Facades\View as ViewFacade;
+use RabbitCMS\Modules\Facades\Modules;
 
 /**
  * Class Module.
@@ -42,18 +42,6 @@ class Module
     protected $enabled = true;
 
     /**
-     * Module providers.
-     *
-     * @var string[]
-     */
-    protected $providers = [];
-
-    /**
-     * @var array
-     */
-    protected $aliases = [];
-
-    /**
      * Module constructor.
      *
      * @param array $options
@@ -63,8 +51,6 @@ class Module
         $this->path = $options['path'];
         $this->namespace = $options['namespace'];
         $this->name = array_key_exists('name', $options) ? $options['name'] : basename($this->path);
-        $this->providers = array_key_exists('providers', $options) ? (array)$options['providers'] : [];
-        $this->aliases = array_key_exists('aliases', $options) ? (array)$options['aliases'] : [];
     }
 
     /**
@@ -98,27 +84,9 @@ class Module
      *
      * @param bool $value
      */
-    public function setEnabled(bool $value = true)
+    public function setEnabled(bool $value = true): void
     {
         $this->enabled = $value;
-    }
-
-    /**
-     * Get modules providers.
-     *
-     * @return string[]
-     */
-    public function getProviders()
-    {
-        return $this->providers;
-    }
-
-    /**
-     * @return array
-     */
-    public function getAliases(): array
-    {
-        return $this->aliases;
     }
 
     /**
@@ -148,12 +116,11 @@ class Module
 
     /**
      * @param string    $path
-     *
      * @param bool|null $secure
      *
      * @return string
      */
-    public function asset(string $path, ?bool $secure = null)
+    public function asset(string $path, ?bool $secure = null): string
     {
         return Modules::asset($this, $path, $secure);
     }

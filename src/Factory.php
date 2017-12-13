@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace RabbitCMS\Modules;
 
+use Illuminate\Foundation\AliasLoader;
 use Illuminate\Foundation\Application;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Str;
@@ -35,6 +36,12 @@ class Factory
      */
     private $namespaces = [];
 
+    private $providers = [];
+
+    private $deferred = [];
+
+    private $aliases = [];
+
     /**
      * @var array
      */
@@ -64,26 +71,32 @@ class Factory
     public function __construct(Application $app, bool $load = true)
     {
         $this->app = $app;
-        if (is_file($path = $this->getDisabledModulesPath())) {
-            $this->disabled = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if (\is_file($path = $this->getDisabledModulesPath())) {
+            $this->disabled = \file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         }
-        if ($load && is_file($this->getCachedModulesPath())) {
+        if ($load && \is_file($this->getCachedModulesPath())) {
             /** @noinspection PhpIncludeInspection */
             [
-                'modules' => $this->modules,
-                'themes' => $this->themes,
+                'modules'    => $this->modules,
+                'themes'     => $this->themes,
                 'namespaces' => $this->namespaces,
-                'paths' => $this->paths
+                'paths'      => $this->paths,
+                'providers'  => $this->providers,
+                'deferred'   => $this->deferred,
+                'aliases'    => $this->aliases,
             ] = (require $this->getCachedModulesPath()) + [
-                'themes' => [],
-                'modules' => [],
-                'paths' => [],
-                'namespaces' => []
+                'themes'     => [],
+                'modules'    => [],
+                'paths'      => [],
+                'namespaces' => [],
+                'providers'  => [],
+                'deferred'   => [],
+                'aliases'    => [],
             ];
 
-            array_walk($this->modules, function (Module $module) {
+            \array_walk($this->modules, function (Module $module) {
                 $module->setEnabled(
-                    !in_array($module->getName(), $this->disabled, true) && is_file($module->getPath('composer.json'))
+                    !\in_array($module->getName(), $this->disabled, true) && \is_file($module->getPath('composer.json'))
                 );
             });
         }
@@ -101,25 +114,22 @@ class Factory
         }
 
         $this->app->make('router')->group([
-            'as' => $scope === 'web' ? '' : "{$scope}."
+            'as' => $scope === 'web' ? '' : "{$scope}.",
         ], function (Router $router) use ($scope) {
-            array_map(function (Module $module) use ($scope, $router) {
-                if (!file_exists($path = $module->getPath("routes/{$scope}.php"))) {
+            \array_map(function (Module $module) use ($scope, $router) {
+                if (!\file_exists($path = $module->getPath("routes/{$scope}.php"))) {
                     return;
                 }
                 $router->group([
-                    'namespace' => $module->getNamespace() . '\\Http\\Controllers'
+                    'namespace' => $module->getNamespace() . '\\Http\\Controllers',
                 ], function (Router $router) use ($module, $path, $scope) {
-                    $options = array_merge([
-                        'namespace' => $scope === 'web' ? null : Str::studly($scope),
-                        'as' => $module->getName() . '.',
-                        'prefix' => $module->getName(),
-                        'middleware' => $scope
+                    $options = \array_merge([
+                        'namespace'  => $scope === 'web' ? null : Str::studly($scope),
+                        'as'         => $module->getName() . '.',
+                        'prefix'     => $module->getName(),
+                        'middleware' => $scope,
                     ], $module->config("routes.{$scope}", []));
-                    $router->group($options, function (
-                        /** @noinspection PhpUnusedParameterInspection */
-                        Router $router
-                    ) use ($path, $module) {
+                    $router->group($options, function (Router $router) use ($path, $module) {
                         /** @noinspection PhpIncludeInspection */
                         require $path;
                     });
@@ -145,7 +155,7 @@ class Factory
      */
     public function getThemesAssetsRoot(): string
     {
-        return $this->app->make('config')->get('modules.themes_assets', 'modules');
+        return $this->app->make('config')->get('modules.themes_assets', 'themes');
     }
 
     /**
@@ -164,7 +174,7 @@ class Factory
      */
     public function getByName(string $name): Module
     {
-        if (array_key_exists($name, $this->modules)) {
+        if (\array_key_exists($name, $this->modules)) {
             return $this->modules[$name];
         }
         throw new ModuleNotFoundException("Module '{$name}' not found.");
@@ -178,17 +188,16 @@ class Factory
      */
     public function getByNamespace(string $namespace): Module
     {
-        if (array_key_exists($namespace, $this->foundNamespaces)) {
+        if (\array_key_exists($namespace, $this->foundNamespaces)) {
             return $this->foundNamespaces[$namespace];
         }
 
         foreach ($this->namespaces as $name => $ns) {
-            if (strpos($namespace, $ns) === 0) {
+            if (\strpos($namespace, $ns) === 0) {
                 return $this->foundNamespaces[$ns] = $this->getByName($name);
             }
         }
         throw new ModuleNotFoundException("Module for namespace '{$namespace}' not found.");
-
     }
 
     /**
@@ -199,12 +208,12 @@ class Factory
      */
     public function getByPath(string $path): Module
     {
-        if (array_key_exists($path, $this->foundPaths)) {
+        if (\array_key_exists($path, $this->foundPaths)) {
             return $this->foundPaths[$path];
         }
 
         foreach ($this->paths as $name => $ns) {
-            if (strpos($path, $ns) === 0) {
+            if (\strpos($path, $ns) === 0) {
                 return $this->foundPaths[$ns] = $this->getByName($name);
             }
         }
@@ -221,7 +230,7 @@ class Factory
      */
     public function getThemeByName(string $name): Theme
     {
-        if (array_key_exists($name, $this->themes)) {
+        if (\array_key_exists($name, $this->themes)) {
             return $this->themes[$name];
         }
         throw new ModuleNotFoundException("Theme '{$name}' not found.");
@@ -294,7 +303,7 @@ class Factory
      */
     public function enabled(): array
     {
-        return array_filter($this->all(), function (Module $module) {
+        return \array_filter($this->all(), function (Module $module) {
             return $module->isEnabled();
         });
     }
@@ -316,14 +325,30 @@ class Factory
         $module->setEnabled($enabled);
 
         if ($enabled) {
-            $this->disabled = array_filter($this->disabled, function ($name) use ($module) {
+            $this->disabled = \array_filter($this->disabled, function ($name) use ($module) {
                 return $name !== $module->getName();
             });
         } else {
             $this->disabled[] = $module->getName();
-            $this->disabled = array_unique($this->disabled);
+            $this->disabled = \array_unique($this->disabled);
         }
 
-        file_put_contents($this->getDisabledModulesPath(), implode(PHP_EOL, $this->disabled));
+        \file_put_contents($this->getDisabledModulesPath(), \implode(PHP_EOL, $this->disabled));
+    }
+
+    public function register(): void
+    {
+        $aliases = [];
+        $providers = [];
+        $deferred = [];
+        \array_map(function (Module $module) use (&$aliases, &$providers, &$deferred) {
+            $aliases += $this->aliases[$module->getName()] ?? [];
+            $providers = \array_merge($providers, $this->providers[$module->getName()] ?? []);
+            $deferred += $this->deferred[$module->getName()] ?? [];
+        }, $this->enabled());
+
+        AliasLoader::getInstance($aliases);
+        $this->app->addDeferredServices($deferred);
+        \array_map([$this->app, 'register'], array_unique($providers));
     }
 }

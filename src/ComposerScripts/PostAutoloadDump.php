@@ -10,7 +10,7 @@ use Composer\Script\Event;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Bootstrap\LoadConfiguration;
 use Illuminate\Foundation\Bootstrap\LoadEnvironmentVariables;
-use Illuminate\Foundation\Console\Kernel;
+use Illuminate\Support\ServiceProvider;
 use RabbitCMS\Modules\Factory;
 use RabbitCMS\Modules\Module;
 use RabbitCMS\Modules\Theme;
@@ -58,6 +58,21 @@ class PostAutoloadDump
     private $paths = [];
 
     /**
+     * @var array
+     */
+    private $providers = [];
+
+    /**
+     * @var array
+     */
+    private $deferred = [];
+
+    /**
+     * @var array
+     */
+    private $aliases = [];
+
+    /**
      * Handle the post-autoload-dump Composer event.
      *
      * @param Event $event
@@ -99,13 +114,18 @@ class PostAutoloadDump
         arsort($this->namespaces);
         arsort($this->paths);
 
+        $this->aliases = array_filter($this->aliases, '\count');
+
         file_put_contents(
             $this->factory->getCachedModulesPath(),
             '<?php return unserialize(' . var_export(serialize([
-                'modules' => $this->modules,
-                'themes' => $this->themes,
+                'modules'    => $this->modules,
+                'themes'     => $this->themes,
                 'namespaces' => $this->namespaces,
-                'paths' => $this->paths
+                'paths'      => $this->paths,
+                'providers'  => $this->providers,
+                'deferred'   => $this->deferred,
+                'aliases'    => $this->aliases,
             ]), true) . ", ['allowed_classes' => " . var_export([Theme::class, Module::class], true) . "]);\n"
         );
     }
@@ -139,7 +159,7 @@ class PostAutoloadDump
     {
         $extra = $package->getExtra()['module'];
         $name = $extra['name'] ?? explode('/', $package->getName())[1];
-        $namespace = $extra['namespace'] ?? trim((string)key($package->getAutoload()['psr-4'] ?? []), '\\');
+        $namespace = $extra['namespace'] ?? trim((string) key($package->getAutoload()['psr-4'] ?? []), '\\');
         $path = $package instanceof RootPackageInterface
             ? $this->application->basePath()
             : $this->composer->getInstallationManager()->getInstallPath($package);
@@ -147,12 +167,25 @@ class PostAutoloadDump
             $path = realpath($this->application->basePath($path));
         }
         $this->modules[$name] = $module = new Module([
-            'name' => $name,
+            'name'      => $name,
             'namespace' => $namespace,
-            'path' => $path,
-            'providers' => (array)($extra['providers'] ?? []),
-            'aliases' => $extra['aliases'] ?? []
+            'path'      => $path,
         ]);
+
+        $this->aliases[$name] = $extra['aliases'] ?? [];
+
+        foreach ((array) ($extra['providers'] ?? []) as $provider) {
+            /* @var ServiceProvider $provider */
+            $provider = new $provider($this->application);
+            if ($provider->isDeferred()) {
+                foreach ($provider->provides() as $provide) {
+                    $this->deferred[$name][$provide] = \get_class($provider);
+                }
+            } else {
+                $this->providers[$name][] = \get_class($provider);
+            }
+        }
+
         $this->namespaces[$name] = $namespace;
         $this->paths[$name] = $path;
 
@@ -179,9 +212,9 @@ class PostAutoloadDump
             $path = realpath($this->application->basePath($path));
         }
         $this->themes[$name] = $theme = new Theme([
-            'name' => $name,
-            'path' => $path,
-            'extends' => $extra['extends'] ?? null
+            'name'    => $name,
+            'path'    => $path,
+            'extends' => $extra['extends'] ?? null,
         ]);
 
         if (is_dir($public = $theme->getPath('assets'))) {

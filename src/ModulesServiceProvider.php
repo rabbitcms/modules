@@ -5,16 +5,15 @@ namespace RabbitCMS\Modules;
 
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Migrations\Migrator;
-use Illuminate\Foundation\AliasLoader;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Bootstrap\BootProviders;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\View\Compilers\BladeCompiler;
+use Illuminate\View\Factory as ViewFactory;
 use RabbitCMS\Modules\Console\DisableCommand;
 use RabbitCMS\Modules\Console\EnableCommand;
 use RabbitCMS\Modules\Console\ListCommand;
 use RabbitCMS\Modules\Facades\Modules;
-use Illuminate\View\Factory as ViewFactory;
 
 /**
  * Class ModulesServiceProvider.
@@ -85,11 +84,11 @@ class ModulesServiceProvider extends ServiceProvider
      */
     protected function registerConfig()
     {
-        $path = dirname(__DIR__) . '/config/config.php';
+        $path = \dirname(__DIR__) . '/config/config.php';
 
         $this->mergeConfigFrom($path, 'modules');
 
-        $this->publishes([$path => config_path('modules.php')], 'config');
+        $this->publishes([$path => \config_path('modules.php')], 'config');
     }
 
     public function registerCommands()
@@ -118,51 +117,48 @@ class ModulesServiceProvider extends ServiceProvider
      */
     protected function registerModules(): void
     {
-        $this->app->beforeBootstrapping(BootProviders::class, function (Application $app) {
-            $aliases = [];
+        $this->app->beforeBootstrapping(BootProviders::class, function () {
             $themeName = Modules::getCurrentTheme();
             $themes = [];
             while ($themeName !== null) {
                 $themes[] = $theme = Modules::getThemeByName($themeName);
                 $themeName = $theme->getExtends();
             }
-            array_map(function (Module $module) use ($app, &$aliases, $themes) {
-                $aliases += $module->getAliases();
+            \array_map(function (Module $module) use ($themes) {
                 //Merge module config.
                 if (is_file($path = $module->getPath('config/config.php'))) {
                     $this->mergeConfigFrom($path, "module.{$module->getName()}");
                 }
 
                 //Load module translation.
-                if (is_dir($path = $module->getPath('resources/lang'))) {
-                    $path2 = base_path("resources/lang/modules/{$module->getName()}");
-                    $this->loadTranslationsFrom(is_dir($path2) ? $path2 : $path, $module->getName());
+                if (\is_dir($path = $module->getPath('resources/lang'))) {
+                    $path2 = \base_path("resources/lang/modules/{$module->getName()}");
+                    $this->loadTranslationsFrom(\is_dir($path2) ? $path2 : $path, $module->getName());
                 }
 
                 foreach ($themes as $theme) {
-                    if (is_dir($path = $theme->getPath("views/{$module->getName()}"))) {
+                    if (\is_dir($path = $theme->getPath("views/{$module->getName()}"))) {
                         $this->loadViewsFrom($path, $module->getName());
                     }
                 }
 
-                if (is_dir($path = $module->getPath('resources/views'))) {
+                if (\is_dir($path = $module->getPath('resources/views'))) {
                     $this->loadViewsFrom($path, $module->getName());
                 }
 
-                array_map(function ($class) use ($app) {
-                    /* @var ServiceProvider $provider */
-                    $provider = new $class($app);
-                    if ($provider->isDeferred()) {
-                        $app->addDeferredServices(array_fill_keys($provider->provides(), $provider));
-                    } else {
-                        $app->register($provider);
-                    }
-                }, $module->getProviders());
+                //\array_map(function ($class) use ($app) {
+                //    /* @var ServiceProvider $provider */
+                //    $provider = new $class($app);
+                //    if ($provider->isDeferred()) {
+                //        $app->addDeferredServices(\array_fill_keys($provider->provides(), $provider));
+                //    } else {
+                //        $app->register($provider);
+                //    }
+                //}, $module->getProviders());
 
             }, Modules::enabled());
-
-            AliasLoader::getInstance($aliases);
-
+            Modules::register();
+           // AliasLoader::getInstance($aliases);
         });
     }
 
@@ -173,8 +169,8 @@ class ModulesServiceProvider extends ServiceProvider
     {
         $this->app->afterResolving('command.vendor.publish', function () {
             foreach (Modules::all() as $module) {
-                if (file_exists($path = $module->getPath('config/config.php'))) {
-                    $this->publishes([$path => config_path("module/{$module->getName()}.php")], 'config');
+                if (\file_exists($path = $module->getPath('config/config.php'))) {
+                    $this->publishes([$path => \config_path("module/{$module->getName()}.php")], 'config');
                 }
             }
         });
@@ -187,8 +183,8 @@ class ModulesServiceProvider extends ServiceProvider
     {
         $this->app->afterResolving('migrator', function (Migrator $migrator) {
             foreach (Modules::enabled() as $module) {
-                if (is_dir($dir = $module->getPath('src/Database/Migrations'))
-                    || is_dir($dir = $module->getPath('database/migrations'))
+                if (\is_dir($dir = $module->getPath('src/Database/Migrations'))
+                    || \is_dir($dir = $module->getPath('database/migrations'))
                 ) {
                     $migrator->path($dir);
                 }
@@ -200,8 +196,8 @@ class ModulesServiceProvider extends ServiceProvider
     {
         $this->app->afterResolving('view', function (ViewFactory $view) {
             $view->composer('*', function (View $view) {
-                $name = explode('::', $view->name(), 2);
-                if (count($name) > 1) {
+                $name = \explode('::', $view->name(), 2);
+                if (\count($name) > 1) {
                     $view->with('module_name', $name[0]);
                 }
             });
