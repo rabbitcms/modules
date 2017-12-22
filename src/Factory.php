@@ -62,6 +62,8 @@ class Factory
      */
     private $disabled = [];
 
+    private $routes = true;
+
     /**
      * Factory constructor.
      *
@@ -103,13 +105,24 @@ class Factory
     }
 
     /**
+     * @return Factory
+     * @internal
+     */
+    public function disableRoutes(): self
+    {
+        $this->routes = false;
+
+        return $this;
+    }
+
+    /**
      * Load modules routes.
      *
      * @param string $scope
      */
     public function loadRoutes(string $scope = 'web'): void
     {
-        if ($this->app->routesAreCached()) {
+        if (!$this->routes || $this->app->routesAreCached()) {
             return;
         }
 

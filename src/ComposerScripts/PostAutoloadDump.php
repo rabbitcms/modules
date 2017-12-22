@@ -93,7 +93,7 @@ class PostAutoloadDump
     {
         $this->composer = $composer;
         $this->application = new Application(getcwd());
-        $this->factory = new Factory($this->application, false);
+        $this->factory = (new Factory($this->application, false))->disableRoutes();
         $this->application->instance('modules', $this->factory);
         $this->application->bootstrapWith([
             LoadEnvironmentVariables::class,
