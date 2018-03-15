@@ -4,4 +4,5 @@ return [
     'modules_assets' => 'modules',
     'themes_assets' => 'themes',
     'theme' => env('THEME'),
+    'assets_cache' => env('ASSETS_CACHE', false)
 ];

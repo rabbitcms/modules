@@ -79,21 +79,21 @@ class Factory
         if ($load && \is_file($this->getCachedModulesPath())) {
             /** @noinspection PhpIncludeInspection */
             [
-                'modules'    => $this->modules,
-                'themes'     => $this->themes,
+                'modules' => $this->modules,
+                'themes' => $this->themes,
                 'namespaces' => $this->namespaces,
-                'paths'      => $this->paths,
-                'providers'  => $this->providers,
-                'deferred'   => $this->deferred,
-                'aliases'    => $this->aliases,
+                'paths' => $this->paths,
+                'providers' => $this->providers,
+                'deferred' => $this->deferred,
+                'aliases' => $this->aliases,
             ] = (require $this->getCachedModulesPath()) + [
-                'themes'     => [],
-                'modules'    => [],
-                'paths'      => [],
+                'themes' => [],
+                'modules' => [],
+                'paths' => [],
                 'namespaces' => [],
-                'providers'  => [],
-                'deferred'   => [],
-                'aliases'    => [],
+                'providers' => [],
+                'deferred' => [],
+                'aliases' => [],
             ];
 
             \array_walk($this->modules, function (Module $module) {
@@ -137,9 +137,9 @@ class Factory
                     'namespace' => $module->getNamespace() . '\\Http\\Controllers',
                 ], function (Router $router) use ($module, $path, $scope) {
                     $options = \array_merge([
-                        'namespace'  => $scope === 'web' ? null : Str::studly($scope),
-                        'as'         => $module->getName() . '.',
-                        'prefix'     => $module->getName(),
+                        'namespace' => $scope === 'web' ? null : Str::studly($scope),
+                        'as' => $module->getName() . '.',
+                        'prefix' => $module->getName(),
                         'middleware' => $scope,
                     ], $module->config("routes.{$scope}", []));
                     $router->group($options, function (Router $router) use ($path, $module) {
@@ -266,14 +266,36 @@ class Factory
         }
 
         $themeName = $this->getCurrentTheme();
+        $cache = config('modules.assets_cache');
         while ($themeName !== null) {
             $theme = $this->getThemeByName($themeName);
-            if (is_file($theme->getPath("assets/{$module->getName()}/{$path}"))) {
+            $file = $theme->getPath("assets/{$module->getName()}/{$path}");
+            if (\is_file($file)) {
+                if ($cache) {
+                    $time = \filemtime($file);
+                    $path = preg_replace('/([^\/])\.([^.]+)/', "\\1@{$time}.\\2", $path);
+                    $link = $theme->getPath("assets/{$module->getName()}/{$path}");
+                    if (!\is_link($link)) {
+                        @unlink($link);
+                        \symlink(basename($file), $link);
+                    }
+                }
                 return $this->app->make('url')
                     ->asset("{$this->getThemesAssetsRoot()}/{$theme->getName()}/{$module->getName()}/{$path}", $secure);
             }
 
             $themeName = $theme->getExtends();
+        }
+
+        $file = $module->getPath("public/{$path}");
+        if ($cache && \is_file($file)) {
+            $time = \filemtime($file);
+            $path = preg_replace('/([^\/])\.([^.]+)/', "\\1@{$time}.\\2", $path);
+            $link = $module->getPath("public/{$path}");
+            if (!\is_link($link)) {
+                @unlink($link);
+                \symlink(basename($file), $link);
+            }
         }
 
         return $this->app->make('url')->asset("{$this->getModulesAssetsRoot()}/{$module->getName()}/{$path}", $secure);
