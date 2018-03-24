@@ -7,6 +7,9 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Migrations\Migrator;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Bootstrap\BootProviders;
+use Illuminate\Routing\Matching\ValidatorInterface;
+use Illuminate\Routing\Route;
+use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\View\Factory as ViewFactory;
@@ -25,6 +28,12 @@ class ModulesServiceProvider extends ServiceProvider
 {
     public function boot()
     {
+        //Allow to adding validators.
+        Route::macro('appendValidator', static function (ValidatorInterface $validator) {
+            Route::getValidators();
+            Route::$validators[] = $validator;
+        });
+
         if ($this->app->routesAreCached()) {
             $this->loadCachedRoutes();
         } else {
@@ -158,7 +167,7 @@ class ModulesServiceProvider extends ServiceProvider
 
             }, Modules::enabled());
             Modules::register();
-           // AliasLoader::getInstance($aliases);
+            // AliasLoader::getInstance($aliases);
         });
     }
 
