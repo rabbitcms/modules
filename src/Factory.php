@@ -126,9 +126,9 @@ class Factory
             return;
         }
 
-        $this->app->make('router')->group([
+        $this->app->make('router')->group(\array_merge([
             'as' => $scope === 'web' ? '' : "{$scope}.",
-        ], function (Router $router) use ($scope) {
+        ], config("modules.routes.$scope", [])), function (Router $router) use ($scope) {
             \array_map(function (Module $module) use ($scope, $router) {
                 if (!\file_exists($path = $module->getPath("routes/{$scope}.php"))) {
                     return;
@@ -136,6 +136,7 @@ class Factory
                 $router->group([
                     'namespace' => $module->getNamespace() . '\\Http\\Controllers',
                 ], function (Router $router) use ($module, $path, $scope) {
+
                     $options = \array_merge([
                         'namespace' => $scope === 'web' ? null : Str::studly($scope),
                         'as' => $module->getName() . '.',
