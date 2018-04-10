@@ -109,8 +109,11 @@ class Module
      *
      * @return mixed
      */
-    public function config(string $key, $default = null)
+    public function config(string $key = null, $default = null)
     {
+        if ($key === null) {
+            return Config::get("module.{$this->getName()}", $default);
+        }
         return Config::get("module.{$this->getName()}.{$key}", $default);
     }
 
