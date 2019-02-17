@@ -17,6 +17,7 @@ use RabbitCMS\Modules\Console\DisableCommand;
 use RabbitCMS\Modules\Console\EnableCommand;
 use RabbitCMS\Modules\Console\ListCommand;
 use RabbitCMS\Modules\Facades\Modules;
+use RabbitCMS\Modules\Http\Validators\ThemeValidator;
 
 /**
  * Class ModulesServiceProvider.
@@ -33,6 +34,8 @@ class ModulesServiceProvider extends ServiceProvider
             Route::getValidators();
             Route::$validators[] = $validator;
         });
+
+        Route::appendValidator(new ThemeValidator());
 
         if ($this->app->routesAreCached()) {
             $this->loadCachedRoutes();
