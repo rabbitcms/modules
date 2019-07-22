@@ -1,12 +1,12 @@
 <?php
+
 declare(strict_types=1);
 
 namespace RabbitCMS\Modules;
 
-use Illuminate\Foundation\AliasLoader;
-use Illuminate\Foundation\Application;
-use Illuminate\Routing\Router;
 use Illuminate\Support\Str;
+use Illuminate\Routing\Router;
+use Illuminate\Foundation\{AliasLoader, Application};
 use RabbitCMS\Modules\Exceptions\ModuleNotFoundException;
 
 /**
@@ -67,16 +67,16 @@ class Factory
     /**
      * Factory constructor.
      *
-     * @param Application $app
-     * @param bool        $load
+     * @param  Application  $app
+     * @param  bool  $load
      */
     public function __construct(Application $app, bool $load = true)
     {
         $this->app = $app;
-        if (\is_file($path = $this->getDisabledModulesPath())) {
-            $this->disabled = \file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if (is_file($path = $this->getDisabledModulesPath())) {
+            $this->disabled = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         }
-        if ($load && \is_file($this->getCachedModulesPath())) {
+        if ($load && is_file($this->getCachedModulesPath())) {
             /** @noinspection PhpIncludeInspection */
             [
                 'modules' => $this->modules,
@@ -96,9 +96,10 @@ class Factory
                 'aliases' => [],
             ];
 
-            \array_walk($this->modules, function (Module $module) {
+            array_walk($this->modules, function (Module $module) {
                 $module->setEnabled(
-                    !\in_array($module->getName(), $this->disabled, true) && \is_file($module->getPath('composer.json'))
+                    ! in_array($module->getName(), $this->disabled,
+                        true) && is_file($module->getPath('composer.json'))
                 );
             });
         }
@@ -118,32 +119,44 @@ class Factory
     /**
      * Load modules routes.
      *
-     * @param string $scope
+     * @param  string  $scope
      */
     public function loadRoutes(string $scope = 'web'): void
     {
-        if (!$this->routes || $this->app->routesAreCached()) {
+        if (! $this->routes || $this->app->routesAreCached()) {
             return;
         }
 
-        $this->app->make('router')->group(\array_merge([
+        $config = config("modules.routes.$scope", []);
+
+        if ($config === false) {
+            return;
+        }
+
+        $this->app->make('router')->group(array_merge([
             'as' => $scope === 'web' ? '' : "{$scope}.",
-        ], config("modules.routes.$scope", [])), function (Router $router) use ($scope) {
-            \array_map(function (Module $module) use ($scope, $router) {
-                if (!\file_exists($path = $module->getPath("routes/{$scope}.php"))) {
+        ], $config), function (Router $router) use ($scope) {
+            array_map(static function (Module $module) use ($scope, $router) {
+                if (! file_exists($path = $module->getPath("routes/{$scope}.php"))) {
                     return;
                 }
                 $router->group([
                     'namespace' => $module->getNamespace() . '\\Http\\Controllers',
-                ], function (Router $router) use ($module, $path, $scope) {
+                ], static function (Router $router) use ($module, $path, $scope) {
+                    $config = $module->config("routes.{$scope}", []);
 
-                    $options = \array_merge([
+                    if ($config === false) {
+                        return;
+                    }
+
+                    $options = array_merge([
                         'namespace' => $scope === 'web' ? null : Str::studly($scope),
                         'as' => $module->getName() . '.',
                         'prefix' => $module->getName(),
                         'middleware' => $scope,
-                    ], $module->config("routes.{$scope}", []));
-                    $router->group($options, function (Router $router) use ($path, $module) {
+                    ], $config);
+
+                    $router->group($options, static function (Router $router) use ($path, $module) {
                         /** @noinspection PhpIncludeInspection */
                         require $path;
                     });
@@ -181,33 +194,33 @@ class Factory
     }
 
     /**
-     * @param string $name
+     * @param  string  $name
      *
      * @return Module
      * @throws ModuleNotFoundException
      */
     public function getByName(string $name): Module
     {
-        if (\array_key_exists($name, $this->modules)) {
+        if (array_key_exists($name, $this->modules)) {
             return $this->modules[$name];
         }
         throw new ModuleNotFoundException("Module '{$name}' not found.");
     }
 
     /**
-     * @param string $namespace
+     * @param  string  $namespace
      *
      * @return Module
      * @throws ModuleNotFoundException
      */
     public function getByNamespace(string $namespace): Module
     {
-        if (\array_key_exists($namespace, $this->foundNamespaces)) {
+        if (array_key_exists($namespace, $this->foundNamespaces)) {
             return $this->foundNamespaces[$namespace];
         }
 
         foreach ($this->namespaces as $name => $ns) {
-            if (\strpos($namespace, $ns) === 0) {
+            if (strpos($namespace, $ns) === 0) {
                 return $this->foundNamespaces[$ns] = $this->getByName($name);
             }
         }
@@ -215,19 +228,19 @@ class Factory
     }
 
     /**
-     * @param string $path
+     * @param  string  $path
      *
      * @return Module
      * @throws ModuleNotFoundException
      */
     public function getByPath(string $path): Module
     {
-        if (\array_key_exists($path, $this->foundPaths)) {
+        if (array_key_exists($path, $this->foundPaths)) {
             return $this->foundPaths[$path];
         }
 
         foreach ($this->paths as $name => $ns) {
-            if (\strpos($path, $ns) === 0) {
+            if (strpos($path, $ns) === 0) {
                 return $this->foundPaths[$ns] = $this->getByName($name);
             }
         }
@@ -237,14 +250,14 @@ class Factory
     /**
      * Get theme by name.
      *
-     * @param string $name
+     * @param  string  $name
      *
      * @return Theme
      * @throws ModuleNotFoundException
      */
     public function getThemeByName(string $name): Theme
     {
-        if (\array_key_exists($name, $this->themes)) {
+        if (array_key_exists($name, $this->themes)) {
             return $this->themes[$name];
         }
         throw new ModuleNotFoundException("Theme '{$name}' not found.");
@@ -253,16 +266,16 @@ class Factory
     /**
      * Get module asset.
      *
-     * @param string|Module $module
-     * @param string        $path
-     * @param bool|null     $secure
+     * @param  string|Module  $module
+     * @param  string  $path
+     * @param  bool|null  $secure
      *
      * @return string
      * @throws ModuleNotFoundException
      */
     public function asset($module, string $path, bool $secure = null): string
     {
-        if (!($module instanceof Module)) {
+        if (! ($module instanceof Module)) {
             $module = $this->getByName($module);
         }
 
@@ -271,14 +284,14 @@ class Factory
         while ($themeName !== null) {
             $theme = $this->getThemeByName($themeName);
             $file = $theme->getPath("assets/{$module->getName()}/{$path}");
-            if (\is_file($file)) {
+            if (is_file($file)) {
                 if ($cache) {
-                    $time = \filemtime($file);
+                    $time = filemtime($file);
                     $path = preg_replace('/([^\/])\.([^.]+)/', "\\1@{$time}.\\2", $path);
                     $link = $theme->getPath("assets/{$module->getName()}/{$path}");
-                    if (!\is_link($link)) {
+                    if (! is_link($link)) {
                         @unlink($link);
-                        \symlink(basename($file), $link);
+                        symlink(basename($file), $link);
                     }
                 }
                 return $this->app->make('url')
@@ -289,13 +302,13 @@ class Factory
         }
 
         $file = $module->getPath("public/{$path}");
-        if ($cache && \is_file($file)) {
-            $time = \filemtime($file);
+        if ($cache && is_file($file)) {
+            $time = filemtime($file);
             $path = preg_replace('/([^\/])\.([^.]+)/', "\\1@{$time}.\\2", $path);
             $link = $module->getPath("public/{$path}");
-            if (!\is_link($link)) {
+            if (! is_link($link)) {
                 @unlink($link);
-                \symlink(basename($file), $link);
+                symlink(basename($file), $link);
             }
         }
 
@@ -339,7 +352,7 @@ class Factory
      */
     public function enabled(): array
     {
-        return \array_filter($this->all(), function (Module $module) {
+        return array_filter($this->all(), static function (Module $module) {
             return $module->isEnabled();
         });
     }
@@ -347,29 +360,29 @@ class Factory
     /**
      * Enable or disable the module.
      *
-     * @param string|Module $module
-     * @param bool          $enabled
+     * @param  string|Module  $module
+     * @param  bool  $enabled
      *
      * @throws ModuleNotFoundException
      */
     public function enable($module, bool $enabled = true): void
     {
-        if (!($module instanceof Module)) {
+        if (! ($module instanceof Module)) {
             $module = $this->getByName($module);
         }
 
         $module->setEnabled($enabled);
 
         if ($enabled) {
-            $this->disabled = \array_filter($this->disabled, function ($name) use ($module) {
+            $this->disabled = array_filter($this->disabled, static function ($name) use ($module) {
                 return $name !== $module->getName();
             });
         } else {
             $this->disabled[] = $module->getName();
-            $this->disabled = \array_unique($this->disabled);
+            $this->disabled = array_unique($this->disabled);
         }
 
-        \file_put_contents($this->getDisabledModulesPath(), \implode(PHP_EOL, $this->disabled));
+        file_put_contents($this->getDisabledModulesPath(), implode(PHP_EOL, $this->disabled));
     }
 
     public function register(): void
@@ -377,14 +390,14 @@ class Factory
         $aliases = [];
         $providers = [];
         $deferred = [];
-        \array_map(function (Module $module) use (&$aliases, &$providers, &$deferred) {
-            $aliases += $this->aliases[$module->getName()] ?? [];
-            $providers = \array_merge($providers, $this->providers[$module->getName()] ?? []);
-            $deferred += $this->deferred[$module->getName()] ?? [];
+        array_map(function (Module $module) use (&$aliases, &$providers, &$deferred) {
+            $aliases = array_merge($this->aliases[$module->getName()] ?? [], $aliases);
+            $providers = array_merge($providers, $this->providers[$module->getName()] ?? []);
+            $deferred = array_merge($this->deferred[$module->getName()] ?? [], $deferred);
         }, $this->enabled());
 
         AliasLoader::getInstance($aliases);
         $this->app->addDeferredServices($deferred);
-        \array_map([$this->app, 'register'], array_unique($providers));
+        array_map([$this->app, 'register'], array_unique($providers));
     }
 }
