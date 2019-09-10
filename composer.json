@@ -9,7 +9,7 @@
     ],
     "require": {
         "php": ">=7.1.4",
-        "laravel/framework": "^5.4.0"
+        "laravel/framework": "^5.4.0 | ^6.0"
     },
     "replace": {
         "rabbitcms/themes": "self.version"
