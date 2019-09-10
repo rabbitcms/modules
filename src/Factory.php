@@ -120,14 +120,16 @@ class Factory
      * Load modules routes.
      *
      * @param  string  $scope
+     * @param  string|null  $namespace
+     * @param  array  $options
      */
-    public function loadRoutes(string $scope = 'web'): void
+    public function loadRoutes(string $scope = 'web', string $namespace = null, array $options = []): void
     {
         if (! $this->routes || $this->app->routesAreCached()) {
             return;
         }
 
-        $config = config("modules.routes.$scope", []);
+        $config = array_merge(config("modules.routes.$scope", []), $options);
 
         if ($config === false) {
             return;
@@ -135,14 +137,14 @@ class Factory
 
         $this->app->make('router')->group(array_merge([
             'as' => $scope === 'web' ? '' : "{$scope}.",
-        ], $config), function (Router $router) use ($scope) {
-            array_map(static function (Module $module) use ($scope, $router) {
+        ], $config), function (Router $router) use ($namespace, $scope) {
+            array_map(static function (Module $module) use ($namespace, $scope, $router) {
                 if (! file_exists($path = $module->getPath("routes/{$scope}.php"))) {
                     return;
                 }
                 $router->group([
                     'namespace' => $module->getNamespace() . '\\Http\\Controllers',
-                ], static function (Router $router) use ($module, $path, $scope) {
+                ], static function (Router $router) use ($module, $path, $scope, $namespace) {
                     $config = $module->config("routes.{$scope}", []);
 
                     if ($config === false) {
@@ -150,7 +152,7 @@ class Factory
                     }
 
                     $options = array_merge([
-                        'namespace' => $scope === 'web' ? null : Str::studly($scope),
+                        'namespace' => $namespace ?? ($scope === 'web' ? null : Str::studly($scope)),
                         'as' => $module->getName() . '.',
                         'prefix' => $module->getName(),
                         'middleware' => $scope,
