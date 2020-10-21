@@ -4,13 +4,13 @@ declare(strict_types=1);
 namespace RabbitCMS\Modules\Facades;
 
 use Illuminate\Support\Facades\Facade;
+use RabbitCMS\Modules\Factory;
 use RabbitCMS\Modules\Module;
 use RabbitCMS\Modules\Theme;
 
 /**
  * Class Modules
  *
- * @package RabbitCMS\Modules\Facades
  * @method static Module getByName(string $name)
  * @method static Module getByNamespace(string $namespace)
  * @method static Module getByPath(string $path)
@@ -18,11 +18,12 @@ use RabbitCMS\Modules\Theme;
  * @method static null|string getCurrentTheme()
  * @method static Module[] all()
  * @method static Module[] enabled()
- * @method static void loadRoutes(string $scope = 'web')
+ * @method static void loadRoutes(string $scope = 'web', string $namespace = null, array $options = [])
  * @method static string asset(string|Module $module, string $path, null|bool $secure = null)
  * @method static void enable(string|Module $module, bool $enabled = true)
  * @method static string getModulesAssetsRoot()
  * @method static string getThemesAssetsRoot()
+ * @mixin Factory
  */
 class Modules extends Facade
 {
