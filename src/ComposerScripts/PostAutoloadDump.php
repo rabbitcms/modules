@@ -1,9 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
 namespace RabbitCMS\Modules\ComposerScripts;
 
 use Composer\Composer;
+use Composer\Package\Link;
 use Composer\Package\PackageInterface;
 use Composer\Package\RootPackageInterface;
 use Composer\Script\Event;
@@ -73,21 +75,31 @@ class PostAutoloadDump
     private $aliases = [];
 
     /**
+     * @var array
+     */
+    private $after = [];
+
+    /**
+     * @var array
+     */
+    private $packageAliases = [];
+
+    /**
      * Handle the post-autoload-dump Composer event.
      *
-     * @param Event $event
+     * @param  Event  $event
      */
     public static function handle(Event $event): void
     {
         $composer = $event->getComposer();
-        require_once $composer->getConfig()->get('vendor-dir') . '/autoload.php';
+        require_once $composer->getConfig()->get('vendor-dir').'/autoload.php';
         new static($composer);
     }
 
     /**
      * ComposerScripts constructor.
      *
-     * @param Composer $composer
+     * @param  Composer  $composer
      */
     public function __construct(Composer $composer)
     {
@@ -104,8 +116,8 @@ class PostAutoloadDump
 
         $this->clearCompiled();
 
-        $publicPath = $this->application->publicPath() . '/' . $this->factory->getModulesAssetsRoot();
-        if (!is_dir($publicPath)) {
+        $publicPath = $this->application->publicPath().'/'.$this->factory->getModulesAssetsRoot();
+        if (! is_dir($publicPath)) {
             mkdir($publicPath, 0777, true);
         }
 
@@ -114,20 +126,47 @@ class PostAutoloadDump
         arsort($this->namespaces);
         arsort($this->paths);
 
+        $this->sortModules();
+
         $this->aliases = array_filter($this->aliases, '\count');
 
         file_put_contents(
             $this->factory->getCachedModulesPath(),
-            '<?php return unserialize(' . var_export(serialize([
-                'modules'    => $this->modules,
-                'themes'     => $this->themes,
+            '<?php return unserialize('.var_export(serialize([
+                'modules' => $this->modules,
+                'themes' => $this->themes,
                 'namespaces' => $this->namespaces,
-                'paths'      => $this->paths,
-                'providers'  => $this->providers,
-                'deferred'   => $this->deferred,
-                'aliases'    => $this->aliases,
-            ]), true) . ", ['allowed_classes' => " . var_export([Theme::class, Module::class], true) . "]);\n"
+                'paths' => $this->paths,
+                'providers' => $this->providers,
+                'deferred' => $this->deferred,
+                'aliases' => $this->aliases,
+            ]), true).", ['allowed_classes' => ".var_export([Theme::class, Module::class], true)."]);\n"
         );
+    }
+
+    protected function sortModules(): void
+    {
+        $modules = $this->modules;
+        $this->modules = [];
+        $filtered = [];
+        while (count($modules)) {
+            $module = array_shift($modules);
+            $name = $module->getName();
+            $after = array_reduce($this->after[$name] ?? [], function (array $after, string $package) {
+                if (array_key_exists($package, $this->packageAliases)) {
+                    $after[] = $this->packageAliases[$package];
+                }
+
+                return $after;
+            }, []);
+
+            if (($filtered[$name] ?? 0) < count($after) && count(array_diff($after, array_keys($this->modules)))) {
+                $modules[] = $module;
+                $filtered[$name] = ($filtered[$name] ?? 0) + 1;
+                continue;
+            }
+            $this->modules[$module->getName()] = $module;
+        }
     }
 
     protected function discoverPackages(): void
@@ -139,7 +178,7 @@ class PostAutoloadDump
     }
 
     /**
-     * @param PackageInterface $package
+     * @param  PackageInterface  $package
      */
     protected function checkPackage(PackageInterface $package): void
     {
@@ -153,7 +192,7 @@ class PostAutoloadDump
     }
 
     /**
-     * @param PackageInterface $package
+     * @param  PackageInterface  $package
      */
     protected function addModule(PackageInterface $package): void
     {
@@ -166,10 +205,14 @@ class PostAutoloadDump
         if (strpos($path, DIRECTORY_SEPARATOR) !== 0) {
             $path = realpath($this->application->basePath($path));
         }
+        $this->packageAliases[$package->getName()] = $name;
+        $this->after[$name] = array_reduce($package->getRequires(), function (array $after, Link $link) {
+            return array_merge($after, [$link->getTarget()]);
+        }, []);
         $this->modules[$name] = $module = new Module([
-            'name'      => $name,
+            'name' => $name,
             'namespace' => $namespace,
-            'path'      => $path,
+            'path' => $path,
         ]);
 
         $this->aliases[$name] = $extra['aliases'] ?? [];
@@ -199,7 +242,7 @@ class PostAutoloadDump
     }
 
     /**
-     * @param PackageInterface $package
+     * @param  PackageInterface  $package
      */
     protected function addTheme(PackageInterface $package): void
     {
@@ -212,8 +255,8 @@ class PostAutoloadDump
             $path = realpath($this->application->basePath($path));
         }
         $this->themes[$name] = $theme = new Theme([
-            'name'    => $name,
-            'path'    => $path,
+            'name' => $name,
+            'path' => $path,
             'extends' => $extra['extends'] ?? null,
         ]);
 
@@ -239,8 +282,8 @@ class PostAutoloadDump
     }
 
     /**
-     * @param string $link
-     * @param string $path
+     * @param  string  $link
+     * @param  string  $path
      */
     protected function updateLink(string $link, string $path): void
     {

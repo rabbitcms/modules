@@ -104,7 +104,7 @@ class Module
     /**
      * Get the specified configuration value.
      *
-     * @param  string $key
+     * @param  string|null $key
      * @param  mixed  $default
      *
      * @return mixed
@@ -158,7 +158,7 @@ class Module
      *
      * @return string
      */
-    public function viewName($view): string
+    public function viewName(string $view): string
     {
         return $this->getName() . '::' . $view;
     }
