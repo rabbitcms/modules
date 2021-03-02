@@ -12,6 +12,7 @@ use Composer\Script\Event;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Bootstrap\LoadConfiguration;
 use Illuminate\Foundation\Bootstrap\LoadEnvironmentVariables;
+use Illuminate\Support\Arr;
 use Illuminate\Support\ServiceProvider;
 use RabbitCMS\Modules\Factory;
 use RabbitCMS\Modules\Module;
@@ -209,10 +210,12 @@ class PostAutoloadDump
         $this->after[$name] = array_reduce($package->getRequires(), function (array $after, Link $link) {
             return array_merge($after, [$link->getTarget()]);
         }, []);
+
         $this->modules[$name] = $module = new Module([
             'name' => $name,
             'namespace' => $namespace,
             'path' => $path,
+            'extra' => Arr::except($extra, ['name', 'namespace', 'aliases', 'providers']),
         ]);
 
         $this->aliases[$name] = $extra['aliases'] ?? [];

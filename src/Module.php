@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace RabbitCMS\Modules;
@@ -44,13 +45,14 @@ class Module
     /**
      * Module constructor.
      *
-     * @param array $options
+     * @param  array  $options
      */
     public function __construct(array $options)
     {
         $this->path = $options['path'];
         $this->namespace = $options['namespace'];
-        $this->name = array_key_exists('name', $options) ? $options['name'] : basename($this->path);
+        $this->name = $options['name'];
+        $this->extra = $options['extra'] ?? [];
     }
 
     /**
@@ -82,7 +84,7 @@ class Module
     /**
      * Set enabled module.
      *
-     * @param bool $value
+     * @param  bool  $value
      */
     public function setEnabled(bool $value = true): void
     {
@@ -92,19 +94,19 @@ class Module
     /**
      * Get module path.
      *
-     * @param string $path
+     * @param  string  $path
      *
      * @return string
      */
     public function getPath(string $path = ''): string
     {
-        return $this->path . ($path ? '/' . $path : '');
+        return $this->path.($path ? '/'.$path : '');
     }
 
     /**
      * Get the specified configuration value.
      *
-     * @param  string|null $key
+     * @param  string|null  $key
      * @param  mixed  $default
      *
      * @return mixed
@@ -114,12 +116,13 @@ class Module
         if ($key === null) {
             return Config::get("module.{$this->getName()}", $default);
         }
+
         return Config::get("module.{$this->getName()}.{$key}", $default);
     }
 
     /**
-     * @param string    $path
-     * @param bool|null $secure
+     * @param  string  $path
+     * @param  bool|null  $secure
      *
      * @return string
      */
@@ -129,20 +132,20 @@ class Module
     }
 
     /**
-     * @param string $key
-     * @param array  $parameters
-     * @param null   $locale
+     * @param  string  $key
+     * @param  array  $parameters
+     * @param  null  $locale
      *
      * @return array|null|string
      */
     public function trans(string $key, array $parameters = [], $locale = null)
     {
-        return trans($this->getName() . '::' . $key, $parameters, $locale);
+        return trans($this->getName().'::'.$key, $parameters, $locale);
     }
 
     /**
-     * @param string $view
-     * @param array  $data
+     * @param  string  $view
+     * @param  array  $data
      *
      * @return ViewContract
      */
@@ -154,12 +157,24 @@ class Module
     /**
      * Get module view name.
      *
-     * @param string $view
+     * @param  string  $view
      *
      * @return string
      */
     public function viewName(string $view): string
     {
-        return $this->getName() . '::' . $view;
+        return $this->getName().'::'.$view;
+    }
+
+    /**
+     * Get extra information from module.
+     *
+     * @param  string  $key
+     * @param  mixed  $default
+     * @return mixed
+     */
+    public function getExtra(string $key, $default = null)
+    {
+        return $this->extra[$key] ?? $default;
     }
 }

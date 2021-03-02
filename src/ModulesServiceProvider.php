@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace RabbitCMS\Modules;
@@ -7,10 +8,9 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Migrations\Migrator;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Bootstrap\BootProviders;
+use Illuminate\Foundation\Support\Providers\EventServiceProvider;
 use Illuminate\Routing\Matching\ValidatorInterface;
 use Illuminate\Routing\Route;
-use Illuminate\Routing\Router;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\View\Factory as ViewFactory;
 use RabbitCMS\Modules\Console\DisableCommand;
@@ -18,6 +18,7 @@ use RabbitCMS\Modules\Console\EnableCommand;
 use RabbitCMS\Modules\Console\ListCommand;
 use RabbitCMS\Modules\Facades\Modules;
 use RabbitCMS\Modules\Http\Validators\ThemeValidator;
+use RabbitCMS\Modules\Support\DiscoverEvents;
 
 /**
  * Class ModulesServiceProvider.
@@ -25,7 +26,7 @@ use RabbitCMS\Modules\Http\Validators\ThemeValidator;
  * @package RabbitCMS\Modules
  * @property Application $app
  */
-class ModulesServiceProvider extends ServiceProvider
+class ModulesServiceProvider extends EventServiceProvider
 {
     public function boot()
     {
@@ -75,6 +76,8 @@ class ModulesServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        parent::register();
+
         $this->app->singleton('modules', function ($app) {
             return new Factory($app);
         });
@@ -96,7 +99,7 @@ class ModulesServiceProvider extends ServiceProvider
      */
     protected function registerConfig()
     {
-        $path = \dirname(__DIR__) . '/config/config.php';
+        $path = \dirname(__DIR__).'/config/config.php';
 
         $this->mergeConfigFrom($path, 'modules');
 
@@ -223,5 +226,29 @@ class ModulesServiceProvider extends ServiceProvider
                 return "<?php echo module_asset(\$module_name, {$expression}); ?>";
             });
         });
+    }
+
+    public function shouldDiscoverEvents()
+    {
+        return true;
+    }
+
+    /**
+     * Discover the events and listeners for the application.
+     *
+     * @return array
+     */
+    public function discoverEvents()
+    {
+        return collect($this->app->make(Factory::class)->enabled())
+            ->filter(function (Module $module) {
+                return is_dir($module->getPath('src/Listeners')) && $module->getExtra('listeners');
+            })
+            ->reduce(function ($discovered, Module $module) {
+                return array_merge_recursive(
+                    $discovered,
+                    DiscoverEvents::within($module->getPath('src/Listeners'), $module->getNamespace().'\Listeners')
+                );
+            }, []);
     }
 }
