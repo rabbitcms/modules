@@ -43,6 +43,13 @@ class Module
     protected $enabled = true;
 
     /**
+     * Extra data
+     *
+     * @var array
+     */
+    protected $extra = [];
+
+    /**
      * Module constructor.
      *
      * @param  array  $options
