@@ -6,6 +6,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Reflector;
 use Illuminate\Support\Str;
 use RabbitCMS\Modules\Attributes\Event;
+use ReflectionAttribute;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionMethod;
@@ -60,8 +61,10 @@ class DiscoverEvents
                     ! isset($method->getParameters()[0])) {
                     continue;
                 }
-                if (class_exists(\ReflectionAttribute::class, false)) {
-                    $event = optional(Arr::first($method->getAttributes(Event::class)))->newInstance()->name ?? null;
+                if (class_exists(ReflectionAttribute::class, false)) {
+                    $event = optional(
+                            Arr::first($method->getAttributes(Event::class, ReflectionAttribute::IS_INSTANCEOF))
+                        )->newInstance()->name ?? null;
                 }
 
                 $listenerEvents[$listener->name.'@'.$method->name] =
