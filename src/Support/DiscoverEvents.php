@@ -58,17 +58,20 @@ class DiscoverEvents
 
             foreach ($listener->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
                 if (class_exists(ReflectionAttribute::class, false)) {
-                    $event = optional(
-                            Arr::first($method->getAttributes(Event::class, ReflectionAttribute::IS_INSTANCEOF))
-                        )->newInstance()->name ?? null;
+                    $attribute = $method->getAttributes(Event::class, ReflectionAttribute::IS_INSTANCEOF)[0] ?? null;
+                    if ($attribute) {
+                        $listenerEvents["{$listener->name}@{$method->name}"] =
+                            $attribute->newInstance()->getEvent($listener, $method);
+                        continue;
+                    }
                 }
 
                 if (empty($event) && (! Str::is('handle*', $method->name) || ! isset($method->getParameters()[0]))) {
                     continue;
                 }
 
-                $listenerEvents[$listener->name.'@'.$method->name] =
-                    $event ?? Reflector::getParameterClassName($method->getParameters()[0]);
+                $listenerEvents["{$listener->name}@{$method->name}"] =
+                    Reflector::getParameterClassName($method->getParameters()[0]);
             }
         }
 
