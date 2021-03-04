@@ -11,6 +11,8 @@ use ReflectionMethod;
 #[\Attribute(\Attribute::TARGET_METHOD)]
 class EloquentEvent extends Event
 {
+    public const BOOTING = 'booting';
+    public const BOOTED = 'booted';
     public const CREATING = 'creating';
     public const CREATED = 'created';
     public const UPDATING = 'updating';
