@@ -75,9 +75,9 @@ class Module
     /**
      * Get module namespace.
      */
-    public function getNamespace(): string
+    public function getNamespace(string $namespace = ''): string
     {
-        return $this->namespace;
+        return $this->namespace.($namespace ? '\\'.ltrim($namespace, '\\') : '');
     }
 
     /**

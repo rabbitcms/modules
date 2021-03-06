@@ -7,13 +7,9 @@ namespace RabbitCMS\Modules;
 use Illuminate\Support\Str;
 use Illuminate\Routing\Router;
 use Illuminate\Foundation\{AliasLoader, Application};
+use RabbitCMS\Modules\Events\ThemeResolvingEvent;
 use RabbitCMS\Modules\Exceptions\ModuleNotFoundException;
 
-/**
- * Class Factory
- *
- * @package RabbitCMS\Backend
- */
 class Factory
 {
     /**
@@ -98,8 +94,8 @@ class Factory
 
             array_walk($this->modules, function (Module $module) {
                 $module->setEnabled(
-                    ! in_array($module->getName(), $this->disabled,
-                        true) && is_file($module->getPath('composer.json'))
+                    ! in_array($module->getName(), $this->disabled, true)
+                    && is_file($module->getPath('composer.json'))
                 );
             });
         }
@@ -143,7 +139,7 @@ class Factory
                     return;
                 }
                 $router->group([
-                    'namespace' => $module->getNamespace() . '\\Http\\Controllers',
+                    'namespace' => $module->getNamespace('Http\\Controllers'),
                 ], static function (Router $router) use ($module, $path, $scope, $namespace) {
                     $config = $module->config("routes.{$scope}", []);
 
@@ -153,7 +149,7 @@ class Factory
 
                     $options = array_merge([
                         'namespace' => $namespace ?? ($scope === 'web' ? null : Str::studly($scope)),
-                        'as' => $module->getName() . '.',
+                        'as' => $module->getName().'.',
                         'prefix' => $module->getName(),
                         'middleware' => $scope,
                     ], $config);
@@ -187,12 +183,11 @@ class Factory
         return $this->app->make('config')->get('modules.themes_assets', 'themes');
     }
 
-    /**
-     * @return null|string
-     */
     public function getCurrentTheme(): ?string
     {
-        return $this->app->make('config')->get('modules.theme');
+        $theme = $this->app->make('config')->get('modules.theme');
+
+        return $this->app->make('events')->until(new ThemeResolvingEvent($theme)) ?? $theme;
     }
 
     /**
@@ -296,6 +291,7 @@ class Factory
                         symlink(basename($file), $link);
                     }
                 }
+
                 return $this->app->make('url')
                     ->asset("{$this->getThemesAssetsRoot()}/{$theme->getName()}/{$module->getName()}/{$path}", $secure);
             }
@@ -324,7 +320,7 @@ class Factory
      */
     public function getCachedModulesPath(): string
     {
-        return $this->app->bootstrapPath() . '/cache/modules.php';
+        return $this->app->bootstrapPath().'/cache/modules.php';
     }
 
     /**
@@ -334,7 +330,7 @@ class Factory
      */
     public function getDisabledModulesPath(): string
     {
-        return $this->app->storagePath() . '/modules.disabled';
+        return $this->app->storagePath().'/modules.disabled';
     }
 
     /**

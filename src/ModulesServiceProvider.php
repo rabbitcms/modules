@@ -9,35 +9,18 @@ use Illuminate\Database\Migrations\Migrator;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Bootstrap\BootProviders;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider;
-use Illuminate\Routing\Matching\ValidatorInterface;
-use Illuminate\Routing\Route;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Translation\Translator;
 use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\View\Factory as ViewFactory;
-use RabbitCMS\Modules\Console\DisableCommand;
-use RabbitCMS\Modules\Console\EnableCommand;
-use RabbitCMS\Modules\Console\ListCommand;
+use RabbitCMS\Modules\Console\{DisableCommand, EnableCommand, ListCommand};
 use RabbitCMS\Modules\Facades\Modules;
-use RabbitCMS\Modules\Http\Validators\ThemeValidator;
 use RabbitCMS\Modules\Support\DiscoverEvents;
 
-/**
- * Class ModulesServiceProvider.
- *
- * @package RabbitCMS\Modules
- * @property Application $app
- */
 class ModulesServiceProvider extends EventServiceProvider
 {
-    public function boot()
+    public function boot(): void
     {
-        //Allow to adding validators.
-        Route::macro('appendValidator', static function (ValidatorInterface $validator) {
-            Route::getValidators();
-            Route::$validators[] = $validator;
-        });
-
-        Route::appendValidator(new ThemeValidator());
-
         if ($this->app->routesAreCached()) {
             $this->loadCachedRoutes();
         } else {
@@ -50,31 +33,19 @@ class ModulesServiceProvider extends EventServiceProvider
         }
     }
 
-    /**
-     * Load the cached routes for the application.
-     *
-     * @return void
-     */
-    protected function loadCachedRoutes()
+    protected function loadCachedRoutes(): void
     {
         $this->app->booted(function () {
             require $this->app->getCachedRoutesPath();
         });
     }
 
-    /**
-     * Load the application routes.
-     *
-     */
-    protected function loadRoutes()
+    protected function loadRoutes(): void
     {
         Modules::loadRoutes('web');
     }
 
-    /**
-     * Register the service provider.
-     */
-    public function register()
+    public function register(): void
     {
         parent::register();
 
@@ -94,9 +65,6 @@ class ModulesServiceProvider extends EventServiceProvider
         $this->registerModules();
     }
 
-    /**
-     * Register config.
-     */
     protected function registerConfig()
     {
         $path = \dirname(__DIR__).'/config/config.php';
@@ -127,59 +95,73 @@ class ModulesServiceProvider extends EventServiceProvider
         ]);
     }
 
-    /**
-     * Register modules providers.
-     */
     protected function registerModules(): void
     {
         $this->app->beforeBootstrapping(BootProviders::class, function () {
             $themeName = Modules::getCurrentTheme();
             $themes = [];
-            while ($themeName !== null) {
-                $themes[] = $theme = Modules::getThemeByName($themeName);
-                $themeName = $theme->getExtends();
-            }
-            \array_map(function (Module $module) use ($themes) {
+            while ($themeName = ($themes[] = Modules::getThemeByName($themeName))->getExtends()){}
+
+            [
+                'translator' => $translators,
+                'components' => $components,
+                'views' => $views,
+            ] = array_merge_recursive(...array_values(array_map(function (Module $module) use ($themes) {
+                $data = [
+                    'translator' => [],
+                    'components' => [],
+                    'views' => [],
+                ];
                 //Merge module config.
                 if (is_file($path = $module->getPath('config/config.php'))) {
                     $this->mergeConfigFrom($path, "module.{$module->getName()}");
                 }
 
                 //Load module translation.
-                if (\is_dir($path = $module->getPath('resources/lang'))) {
-                    $path2 = \base_path("resources/lang/modules/{$module->getName()}");
-                    $this->loadTranslationsFrom(\is_dir($path2) ? $path2 : $path, $module->getName());
+                if (is_dir($path = base_path("resources/lang/modules/{$module->getName()}"))
+                    || is_dir($path = $module->getPath('resources/lang'))) {
+                    $data['translator'][$module->getName()] = $path;
+                }
+
+                if (is_dir($path = $module->getPath('src/Views/Components'))) {
+                    $data['components'][] = [$module->getNamespace('Views\Components'), $module->getName()];
                 }
 
                 foreach ($themes as $theme) {
-                    if (\is_dir($path = $theme->getPath("views/{$module->getName()}"))) {
-                        $this->loadViewsFrom($path, $module->getName());
+                    if (is_dir($path = $theme->getPath("views/{$module->getName()}"))) {
+                        $data['views'][$module->getName()][] = $path;
                     }
                 }
 
-                if (\is_dir($path = $module->getPath('resources/views'))) {
-                    $this->loadViewsFrom($path, $module->getName());
+                if (is_dir($path = $module->getPath('resources/views'))) {
+                    $data['views'][$module->getName()][] = $path;
                 }
 
-                //\array_map(function ($class) use ($app) {
-                //    /* @var ServiceProvider $provider */
-                //    $provider = new $class($app);
-                //    if ($provider->isDeferred()) {
-                //        $app->addDeferredServices(\array_fill_keys($provider->provides(), $provider));
-                //    } else {
-                //        $app->register($provider);
-                //    }
-                //}, $module->getProviders());
+                return $data;
+            }, Modules::enabled())));
 
-            }, Modules::enabled());
+            $this->callAfterResolving('translator', function (Translator $translator) use ($translators) {
+                foreach ($translators as $namespace => $path) {
+                    $translator->addNamespace($namespace, $path);
+                }
+            });
+
+            $this->callAfterResolving('blade.compiler', function (BladeCompiler $compiler) use ($components) {
+                foreach ($components as [$namespace, $prefix]) {
+                    $compiler->componentNamespace($namespace, $prefix);
+                }
+            });
+
+            $this->callAfterResolving('view', function (\Illuminate\View\Factory $view) use ($views) {
+                foreach ($views as $namespace => $path) {
+                    $view->addNamespace($namespace, $path);
+                }
+            });
+
             Modules::register();
-            // AliasLoader::getInstance($aliases);
         });
     }
 
-    /**
-     * Publish modules config.
-     */
     protected function publishConfigs(): void
     {
         $this->app->afterResolving('command.vendor.publish', function () {
@@ -191,15 +173,12 @@ class ModulesServiceProvider extends EventServiceProvider
         });
     }
 
-    /**
-     * Load modules migrations.
-     */
     protected function loadMigrations(): void
     {
         $this->app->afterResolving('migrator', function (Migrator $migrator) {
             foreach (Modules::enabled() as $module) {
-                if (\is_dir($dir = $module->getPath('src/Database/Migrations'))
-                    || \is_dir($dir = $module->getPath('database/migrations'))
+                if (is_dir($dir = $module->getPath('database/migrations'))
+                    || is_dir($dir = $module->getPath('src/Database/Migrations'))
                 ) {
                     $migrator->path($dir);
                 }
@@ -233,12 +212,7 @@ class ModulesServiceProvider extends EventServiceProvider
         return true;
     }
 
-    /**
-     * Discover the events and listeners for the application.
-     *
-     * @return array
-     */
-    public function discoverEvents()
+    public function discoverEvents(): array
     {
         return collect($this->app->make(Factory::class)->enabled())
             ->filter(function (Module $module) {
@@ -247,7 +221,7 @@ class ModulesServiceProvider extends EventServiceProvider
             ->reduce(function ($discovered, Module $module) {
                 return array_merge_recursive(
                     $discovered,
-                    DiscoverEvents::within($module->getPath('src/Listeners'), $module->getNamespace().'\Listeners')
+                    DiscoverEvents::within($module->getPath('src/Listeners'), $module->getNamespace('Listeners'))
                 );
             }, []);
     }
