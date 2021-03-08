@@ -6,6 +6,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Reflector;
 use Illuminate\Support\Str;
 use RabbitCMS\Modules\Attributes\Event;
+use RabbitCMS\Modules\Module;
 use ReflectionAttribute;
 use ReflectionClass;
 use ReflectionException;
@@ -17,36 +18,35 @@ class DiscoverEvents
 {
     /**
      * Get all of the events and listeners by searching the given listener directory.
-     *
-     * @param  string  $listenerPath
-     * @param  string  $namespace
-     * @return array
      */
-    public static function within($listenerPath, $namespace)
+    public static function within(Module $module): array
     {
-        return collect(static::getListenerEvents(
-            (new Finder)->files()->in($listenerPath), realpath($listenerPath), $namespace
-        ))->mapToDictionary(function ($event, $listener) {
-            return [$event => $listener];
-        })->all();
+        return collect(
+            static::getListenerEvents(
+                (new Finder)->files()->in($listenerPath = $module->getPath('src/Listeners')),
+                realpath($listenerPath),
+                $module
+            ))
+            ->reduce(function (array $list, string|array $events, string $listener) {
+                return array_reduce((array) $events, function (array $list, $event) use ($listener) {
+                    $list[$event] = array_merge($list[$event] ?? [], [$listener]);
+
+                    return $list;
+                }, $list);
+            }, []);
     }
 
     /**
      * Get all of the listeners and their corresponding events.
-     *
-     * @param  iterable  $listeners
-     * @param  string  $basePath
-     * @param  string  $namespace
-     * @return array
      */
-    protected static function getListenerEvents($listeners, $basePath, $namespace)
+    protected static function getListenerEvents(iterable $listeners, string $basePath, Module $module): array
     {
         $listenerEvents = [];
 
         foreach ($listeners as $listener) {
             try {
                 $listener = new ReflectionClass(
-                    static::classFromFile($listener, $basePath, $namespace)
+                    static::classFromFile($listener, $basePath, $module->getNamespace('Listeners'))
                 );
             } catch (ReflectionException $e) {
                 continue;
@@ -58,10 +58,16 @@ class DiscoverEvents
 
             foreach ($listener->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
                 if (class_exists(ReflectionAttribute::class, false)) {
-                    $attribute = $method->getAttributes(Event::class, ReflectionAttribute::IS_INSTANCEOF)[0] ?? null;
-                    if ($attribute) {
+                    $attributes = $method->getAttributes(Event::class, ReflectionAttribute::IS_INSTANCEOF);
+                    if (count($attributes) > 0) {
                         $listenerEvents["{$listener->name}@{$method->name}"] =
-                            $attribute->newInstance()->getEvent($listener, $method);
+                            array_map(function (ReflectionAttribute $attribute) use (
+                                $listener,
+                                $method,
+                                $module
+                            ) {
+                                return $attribute->newInstance()->getEvent($listener, $method, $module);
+                            }, $attributes);
                         continue;
                     }
                 }
@@ -71,7 +77,7 @@ class DiscoverEvents
                 }
 
                 $listenerEvents["{$listener->name}@{$method->name}"] =
-                    Reflector::getParameterClassName($method->getParameters()[0]);
+                    [Reflector::getParameterClassName($method->getParameters()[0])];
             }
         }
 

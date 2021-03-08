@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace RabbitCMS\Modules\Attributes;
 
 use Illuminate\Support\Reflector;
+use RabbitCMS\Modules\Module;
 use ReflectionMethod;
 use ReflectionClass;
 
@@ -15,7 +16,7 @@ class Event
     {
     }
 
-    public function getEvent(ReflectionClass $listener, ReflectionMethod $method): ?string
+    public function getEvent(ReflectionClass $listener, ReflectionMethod $method, Module $module): ?string
     {
         if ($this->name) {
             return $this->name;

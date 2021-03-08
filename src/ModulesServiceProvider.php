@@ -221,7 +221,7 @@ class ModulesServiceProvider extends EventServiceProvider
             ->reduce(function ($discovered, Module $module) {
                 return array_merge_recursive(
                     $discovered,
-                    DiscoverEvents::within($module->getPath('src/Listeners'), $module->getNamespace('Listeners'))
+                    DiscoverEvents::within($module)
                 );
             }, []);
     }

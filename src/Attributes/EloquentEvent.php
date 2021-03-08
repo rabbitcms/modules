@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace RabbitCMS\Modules\Attributes;
 
 use Illuminate\Support\Reflector;
+use RabbitCMS\Modules\Module;
 use ReflectionClass;
 use ReflectionMethod;
 
@@ -32,7 +33,7 @@ class EloquentEvent extends Event
         parent::__construct($name);
     }
 
-    public function getEvent(ReflectionClass $listener, ReflectionMethod $method): ?string
+    public function getEvent(ReflectionClass $listener, ReflectionMethod $method, Module $module): ?string
     {
         if ($this->model === null) {
             $this->model = Reflector::getParameterClassName($method->getParameters()[0]);
