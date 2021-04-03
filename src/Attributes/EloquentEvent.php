@@ -9,7 +9,7 @@ use RabbitCMS\Modules\Module;
 use ReflectionClass;
 use ReflectionMethod;
 
-#[\Attribute(\Attribute::TARGET_METHOD)]
+#[\Attribute(\Attribute::TARGET_METHOD | \Attribute::IS_REPEATABLE)]
 class EloquentEvent extends Event
 {
     public const BOOTING = 'booting';

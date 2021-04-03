@@ -9,13 +9,17 @@ use Illuminate\Database\Migrations\Migrator;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Bootstrap\BootProviders;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Reflector;
+use Illuminate\Support\Str;
 use Illuminate\Translation\Translator;
 use Illuminate\View\Compilers\BladeCompiler;
 use Illuminate\View\Factory as ViewFactory;
 use RabbitCMS\Modules\Console\{DisableCommand, EnableCommand, ListCommand};
+use RabbitCMS\Modules\Attributes\Event;
 use RabbitCMS\Modules\Facades\Modules;
-use RabbitCMS\Modules\Support\DiscoverEvents;
+use RabbitCMS\Modules\Support\ClassCollector;
 
 class ModulesServiceProvider extends EventServiceProvider
 {
@@ -100,7 +104,8 @@ class ModulesServiceProvider extends EventServiceProvider
         $this->app->beforeBootstrapping(BootProviders::class, function () {
             $themeName = Modules::getCurrentTheme();
             $themes = [];
-            while ($themeName = ($themes[] = Modules::getThemeByName($themeName))->getExtends()){}
+            while ($themeName = ($themes[] = Modules::getThemeByName($themeName))->getExtends()) {
+            }
 
             [
                 'translator' => $translators,
@@ -215,14 +220,58 @@ class ModulesServiceProvider extends EventServiceProvider
     public function discoverEvents(): array
     {
         return collect($this->app->make(Factory::class)->enabled())
-            ->filter(function (Module $module) {
-                return is_dir($module->getPath('src/Listeners')) && $module->getExtra('listeners');
-            })
             ->reduce(function ($discovered, Module $module) {
-                return array_merge_recursive(
-                    $discovered,
-                    DiscoverEvents::within($module)
-                );
+                return array_merge_recursive($discovered, $this->getListenerEvents($module));
+            }, []);
+    }
+
+    /**
+     * Get all of the listeners and their corresponding events.
+     */
+    protected function getListenerEvents(Module $module): array
+    {
+        if (! is_dir($module->getPath('src/Listeners')) || ! $module->getExtra('listeners', true)) {
+            return [];
+        }
+
+        return ClassCollector::make($module->getPath('src/Listeners'), $module->getNamespace('Listeners'))
+            ->find()
+            ->reduce(function (Collection $listenerEvents, \ReflectionClass $class) use ($module) {
+                echo $class->getName(),PHP_EOL;
+                foreach ($class->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
+                    if (class_exists(\ReflectionAttribute::class, false)) {
+                        $attributes = $method->getAttributes(Event::class, \ReflectionAttribute::IS_INSTANCEOF);
+                        if (count($attributes) > 0) {
+                            $listenerEvents["{$class->name}@{$method->name}"] =
+                                array_map(function (\ReflectionAttribute $attribute) use (
+                                    $class,
+                                    $method,
+                                    $module
+                                ) {
+                                    return $attribute->newInstance()->getEvent($class, $method, $module);
+                                }, $attributes);
+                            continue;
+                        }
+                    }
+
+                    if (empty($event) && (! Str::is('handle*',
+                                $method->name) || ! isset($method->getParameters()[0]))) {
+                        continue;
+                    }
+
+                    $listenerEvents["{$class->name}@{$method->name}"] =
+                        [Reflector::getParameterClassName($method->getParameters()[0])];
+                }
+
+                return $listenerEvents;
+            }, collect())
+            ->filter()
+            ->reduce(function (array $list, string|array $events, string $listener) {
+                return array_reduce((array) $events, function (array $list, $event) use ($listener) {
+                    $list[$event] = array_merge($list[$event] ?? [], [$listener]);
+
+                    return $list;
+                }, $list);
             }, []);
     }
 }

@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace RabbitCMS\Modules;
 
+use DtKt\Api2\Http\Controllers\Api\GetManagerByPhone;
 use Illuminate\Support\Str;
 use Illuminate\Routing\Router;
 use Illuminate\Foundation\{AliasLoader, Application};
+use RabbitCMS\Modules\Attributes\RouterAttribute;
 use RabbitCMS\Modules\Events\ThemeResolvingEvent;
 use RabbitCMS\Modules\Exceptions\ModuleNotFoundException;
+use RabbitCMS\Modules\Support\ClassCollector;
 
 class Factory
 {
@@ -135,29 +138,58 @@ class Factory
             'as' => $scope === 'web' ? '' : "{$scope}.",
         ], $config), function (Router $router) use ($namespace, $scope) {
             array_map(static function (Module $module) use ($namespace, $scope, $router) {
-                if (! file_exists($path = $module->getPath("routes/{$scope}.php"))) {
-                    return;
-                }
                 $router->group([
                     'namespace' => $module->getNamespace('Http\\Controllers'),
-                ], static function (Router $router) use ($module, $path, $scope, $namespace) {
+                ], static function (Router $router) use ($module, $scope, $namespace) {
                     $config = $module->config("routes.{$scope}", []);
 
                     if ($config === false) {
                         return;
                     }
-
+                    $namespace ??= $scope === 'web' ? null : Str::studly($scope);
                     $options = array_merge([
-                        'namespace' => $namespace ?? ($scope === 'web' ? null : Str::studly($scope)),
+                        'namespace' => $namespace,
                         'as' => $module->getName().'.',
                         'prefix' => $module->getName(),
                         'middleware' => $scope,
                     ], $config);
 
-                    $router->group($options, static function (Router $router) use ($path, $module) {
-                        /** @noinspection PhpIncludeInspection */
-                        require $path;
-                    });
+                    if (class_exists(\ReflectionAttribute::class)) {
+                        $router->group($options, static function (Router $router) use ($module, $scope) {
+                            if (! is_dir($path = $module->getPath('src/Http/Controllers/'.Str::studly($scope)))) {
+                                return;
+                            }
+                            ClassCollector::make(
+                                $path,
+                                $module->getNamespace('Http\\Controllers\\'.Str::studly($scope))
+                            )
+                                ->find()
+                                ->each(function (\ReflectionClass $class) use ($scope, $router) {
+                                    $attributes = $class->getAttributes(RouterAttribute::class, \ReflectionAttribute::IS_INSTANCEOF);
+                                    $route = $router->name('');
+                                    foreach ($attributes as $attribute) {
+                                        $route = $attribute->newInstance()($class, $route);
+                                    }
+
+                                    $route->group(function (Router $router) use ($class) {
+                                        foreach ($class->getMethods(\ReflectionMethod::IS_PUBLIC) as $method){
+                                            $attributes = $method->getAttributes(RouterAttribute::class, \ReflectionAttribute::IS_INSTANCEOF);
+                                            $route = $router;
+                                            foreach ($attributes as $attribute) {
+                                                $route = $attribute->newInstance()($method, $route);
+                                            }
+                                        }
+                                    });
+                                });
+                        });
+                    }
+
+                    if (file_exists($path = $module->getPath("routes/{$scope}.php"))) {
+                        $router->group($options, static function (Router $router) use ($path, $module) {
+                            /** @noinspection PhpIncludeInspection */
+                            require $path;
+                        });
+                    }
                 });
             }, $this->enabled());
         });
