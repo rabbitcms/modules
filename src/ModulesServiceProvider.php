@@ -237,7 +237,6 @@ class ModulesServiceProvider extends EventServiceProvider
         return ClassCollector::make($module->getPath('src/Listeners'), $module->getNamespace('Listeners'))
             ->find()
             ->reduce(function (Collection $listenerEvents, \ReflectionClass $class) use ($module) {
-                echo $class->getName(),PHP_EOL;
                 foreach ($class->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
                     if (class_exists(\ReflectionAttribute::class, false)) {
                         $attributes = $method->getAttributes(Event::class, \ReflectionAttribute::IS_INSTANCEOF);
