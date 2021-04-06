@@ -9,7 +9,7 @@ use RabbitCMS\Modules\Module;
 use ReflectionMethod;
 use ReflectionClass;
 
-#[\Attribute(\Attribute::TARGET_METHOD)]
+#[\Attribute(\Attribute::TARGET_METHOD | \Attribute::IS_REPEATABLE)]
 class Event
 {
     public function __construct(protected ?string $name = null)
@@ -22,7 +22,7 @@ class Event
             return $this->name;
         }
 
-        if(! isset($method->getParameters()[0])) {
+        if (! isset($method->getParameters()[0])) {
             return null;
         }
 
