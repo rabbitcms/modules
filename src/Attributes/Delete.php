@@ -11,6 +11,6 @@ class Delete extends Method
 {
     public function __construct(string $path = '', array $options = [])
     {
-        parent::__construct(Request::METHOD_GET, $path, $options);
+        parent::__construct(Request::METHOD_DELETE, $path, $options);
     }
 }
