@@ -104,14 +104,18 @@ class ModulesServiceProvider extends EventServiceProvider
         $this->app->beforeBootstrapping(BootProviders::class, function () {
             $themeName = Modules::getCurrentTheme();
             $themes = [];
-            while ($themeName = ($themes[] = Modules::getThemeByName($themeName))->getExtends()) {
+            while ($themeName && $themeName = ($themes[] = Modules::getThemeByName($themeName))->getExtends()) {
             }
 
             [
                 'translator' => $translators,
                 'components' => $components,
                 'views' => $views,
-            ] = array_merge_recursive(...array_values(array_map(function (Module $module) use ($themes) {
+            ] = array_merge_recursive([
+                'translator' => [],
+                'components' => [],
+                'views' => [],
+            ], ...array_values(array_map(function (Module $module) use ($themes) {
                 $data = [
                     'translator' => [],
                     'components' => [],
