@@ -99,55 +99,44 @@ class ModulesServiceProvider extends EventServiceProvider
         ]);
     }
 
+    protected function getThemes(): array
+    {
+        $themeName = Modules::getCurrentTheme();
+        $themes = [];
+        while ($themeName && $themeName = ($themes[] = Modules::getThemeByName($themeName))->getExtends()) {
+        }
+        return $themes;
+    }
+
     protected function registerModules(): void
     {
         $this->app->beforeBootstrapping(BootProviders::class, function () {
-            $themeName = Modules::getCurrentTheme();
-            $themes = [];
-            while ($themeName && $themeName = ($themes[] = Modules::getThemeByName($themeName))->getExtends()) {
-            }
-
-            [
-                'translator' => $translators,
-                'components' => $components,
-                'views' => $views,
-            ] = array_merge_recursive([
-                'translator' => [],
-                'components' => [],
-                'views' => [],
-            ], ...array_values(array_map(function (Module $module) use ($themes) {
-                $data = [
-                    'translator' => [],
-                    'components' => [],
-                    'views' => [],
-                ];
+            $translators = [];
+            $components = [];
+            $views = [];
+            foreach (Modules::enabled() as $module) {
                 //Merge module config.
-                if (is_file($path = $module->getPath('config/config.php'))) {
+                $path = $module->getPath('config/config.php');
+                if (is_file($path)) {
                     $this->mergeConfigFrom($path, "module.{$module->getName()}");
                 }
 
                 //Load module translation.
                 if (is_dir($path = base_path("resources/lang/modules/{$module->getName()}"))
                     || is_dir($path = $module->getPath('resources/lang'))) {
-                    $data['translator'][$module->getName()] = $path;
+                    $translators[$module->getName()] = $path;
                 }
 
-                if (is_dir($path = $module->getPath('src/Views/Components'))) {
-                    $data['components'][] = [$module->getNamespace('Views\Components'), $module->getName()];
+                $path = $module->getPath('src/Views/Components');
+                if (is_dir($path)) {
+                    $components[] = [$module->getNamespace('Views\Components'), $module->getName()];
                 }
 
-                foreach ($themes as $theme) {
-                    if (is_dir($path = $theme->getPath("views/{$module->getName()}"))) {
-                        $data['views'][$module->getName()][] = $path;
-                    }
+                $path = $module->getPath('resources/views');
+                if (is_dir($path)) {
+                    $views[$module->getName()] = $path;
                 }
-
-                if (is_dir($path = $module->getPath('resources/views'))) {
-                    $data['views'][$module->getName()][] = $path;
-                }
-
-                return $data;
-            }, Modules::enabled())));
+            }
 
             $this->callAfterResolving('translator', function (Translator $translator) use ($translators) {
                 foreach ($translators as $namespace => $path) {
@@ -162,8 +151,19 @@ class ModulesServiceProvider extends EventServiceProvider
             });
 
             $this->callAfterResolving('view', function (\Illuminate\View\Factory $view) use ($views) {
+                $themes = $this->getThemes();
                 foreach ($views as $namespace => $path) {
-                    $view->addNamespace($namespace, $path);
+                    $list = [];
+
+                    foreach ($themes as $theme) {
+                        $themePath = $theme->getPath("views/{$namespace}");
+                        if (is_dir($themePath)) {
+                            $list[] = $themePath;
+                        }
+                        $list[] = $path;
+                    }
+
+                    $view->addNamespace($namespace, $list);
                 }
             });
 
