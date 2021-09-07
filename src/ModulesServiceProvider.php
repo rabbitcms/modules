@@ -167,7 +167,7 @@ class ModulesServiceProvider extends EventServiceProvider
                     $view->addNamespace($namespace, $list);
                 }
 
-                $view->composer('*', function (View $view) {
+                $view->composer('*', function (View $view) use ($themes) {
                     $view->with([
                         'theme' => ($themes[0] ?? null)?->getName(),
                     ]);
