@@ -105,6 +105,7 @@ class ModulesServiceProvider extends EventServiceProvider
         $themes = [];
         while ($themeName && $themeName = ($themes[] = Modules::getThemeByName($themeName))->getExtends()) {
         }
+
         return $themes;
     }
 
@@ -165,6 +166,12 @@ class ModulesServiceProvider extends EventServiceProvider
 
                     $view->addNamespace($namespace, $list);
                 }
+
+                $view->composer('*', function (View $view) {
+                    $view->with([
+                        'theme' => ($themes[0] ?? null)?->getName(),
+                    ]);
+                });
             });
 
             Modules::register();
