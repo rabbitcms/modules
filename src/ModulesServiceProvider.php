@@ -128,9 +128,15 @@ class ModulesServiceProvider extends EventServiceProvider
                     $translators[$module->getName()] = $path;
                 }
 
+                /* Deprecated. Use View namespace instead */
                 $path = $module->getPath('src/Views/Components');
                 if (is_dir($path)) {
                     $components[] = [$module->getNamespace('Views\Components'), $module->getName()];
+                }
+
+                $path = $module->getPath('src/View/Components');
+                if (is_dir($path)) {
+                    $components[] = [$module->getNamespace('View\Components'), $module->getName()];
                 }
 
                 $path = $module->getPath('resources/views');
