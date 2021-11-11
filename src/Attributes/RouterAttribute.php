@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace RabbitCMS\Modules\Attributes;
 
 use Illuminate\Routing\{Route, Router, RouteRegistrar};
-use ReflectionMethod;
 use ReflectionClass;
+use ReflectionMethod;
 
 abstract class RouterAttribute
 {
