@@ -17,7 +17,11 @@ class Resource extends RouterAttribute
 
     public function __invoke(ReflectionMethod|ReflectionClass $method, RouteRegistrar|Router $route): RouteRegistrar
     {
-        $route->resource($this->name, '\\'.$method->getName(), $this->options);
+
+        $route->group(function(Router $router) use ($method) {
+            $router->resource($this->name, '\\'.$method->getName(), $this->options);
+        });
+
 
         return $route;
     }
