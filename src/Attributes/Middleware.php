@@ -17,10 +17,8 @@ class Middleware extends RouterAttribute
     {
     }
 
-    public function __invoke(
-        ReflectionClass|ReflectionMethod $method,
-        Router|Route|RouteRegistrar $route
-    ): Route|RouteRegistrar {
+    public function __invoke(ReflectionClass $class, ?ReflectionMethod $method, Router|Route|RouteRegistrar $route): Route|RouteRegistrar
+    {
         return $route->middleware($this->middleware);
     }
 }

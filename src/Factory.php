@@ -168,7 +168,7 @@ class Factory
                                     $attributes = $class->getAttributes(RouterAttribute::class, \ReflectionAttribute::IS_INSTANCEOF);
                                     $route = $router->name('');
                                     foreach ($attributes as $attribute) {
-                                        $route = $attribute->newInstance()($class, $route);
+                                        $route = $attribute->newInstance()($class, null, $route);
                                     }
 
                                     $route->group(function (Router $router) use ($class) {
@@ -176,7 +176,7 @@ class Factory
                                             $attributes = $method->getAttributes(RouterAttribute::class, \ReflectionAttribute::IS_INSTANCEOF);
                                             $route = $router;
                                             foreach ($attributes as $attribute) {
-                                                $route = $attribute->newInstance()($method, $route);
+                                                $route = $attribute->newInstance()($class, $method, $route);
                                             }
                                         }
                                     });

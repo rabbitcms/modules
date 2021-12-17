@@ -10,5 +10,5 @@ use ReflectionMethod;
 
 abstract class RouterAttribute
 {
-    abstract public function __invoke(ReflectionMethod|ReflectionClass $method, Router|RouteRegistrar $route): Route|RouteRegistrar;
+    abstract public function __invoke(ReflectionClass $class, ?ReflectionMethod $method, Router|RouteRegistrar $route): Route|RouteRegistrar;
 }

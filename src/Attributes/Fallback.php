@@ -12,7 +12,7 @@ use Illuminate\Routing\{Route, Router, RouteRegistrar};
 #[Attribute(Attribute::TARGET_METHOD)]
 class Fallback extends RouterAttribute
 {
-    public function __invoke(ReflectionMethod|ReflectionClass $method, Router|Route|RouteRegistrar $route): Route
+    public function __invoke(ReflectionClass $class, ?ReflectionMethod $method, Router|Route|RouteRegistrar $route): Route
     {
         if ($route instanceof Router) {
             return $route->fallback([$method->class, $method->name]);

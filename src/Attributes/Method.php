@@ -15,10 +15,10 @@ class Method extends RouterAttribute
     {
     }
 
-    public function __invoke(ReflectionMethod|ReflectionClass $method, Router|RouteRegistrar $route): Route
+    public function __invoke(ReflectionClass $class, ?ReflectionMethod $method, Router|RouteRegistrar $route): Route
     {
-        $group = function (Router $router) use (&$route, $method) {
-            $route = $router->match($this->method, $this->path, [$method->class, $method->name]);
+        $group = function (Router $router) use ($class, &$route, $method) {
+            $route = $router->match($this->method, $this->path, [$class->name, $method->name]);
         };
 
         if ($route instanceof RouteRegistrar) {
